@@ -19,6 +19,7 @@
 #include <list>
 #include <mutex>
 #include <unordered_map>
+#include <type_traits>
 
 class Entry;
 
@@ -26,11 +27,12 @@ class FileSystem
 {
 public:
     static const int kBlockSize = 64; // 块大小，本程序为了简便等于磁盘扇区大小
-    static const int kFatEntrySize = 1; // 每个 FAT 条目的大小（字节）
-    static const int kRawEntrySize = 8; // 目录项大小
+    static const int kEntrySize = 8; // 目录项大小
+    static const int kMaxChildEntries = 8; // 一个目录最大的目录项数
     static const int kMaxOpenedFiles = 5;
     static const int kRawFileNameLength = 5;
     static const int END_OF_FILE = -1;
+    static_assert (kEntrySize * kMaxChildEntries == kBlockSize, "Mismatch constants.");
 
     enum Attribute {
         ReadOnly = 1,
@@ -59,14 +61,20 @@ public:
     std::shared_ptr<Entry> getEntry(const std::string& fullPath);
     bool exist(const std::string& fullPath);
 
+    bool createDir(const std::string& fullPath);
     bool createFile(const std::string& fullPath, Attributes attributes);
     bool openFile(const std::string& fullPath, OpenModes openModes);
     std::unique_ptr<std::string> readFile(const std::string& fullPath, int length);
     int writeFile(const std::string& fullPath, char* m_buffer, int length);
     bool closeFile(const std::string& fullPath);
+    bool setFileAttributes(const std::string& fullPath, Attributes attributes);
+    /**
+     * @brief deleteEntry
+     * @param fullPath
+     * @return
+     */
+    bool deleteEntry(const std::string& fullPath);
 
-    bool createDir(const std::string& fullPath);
-    bool removeDir(const std::string& fullPath);
     //std::shared_ptr<Entry> listEntries(const std::string& fullpath);
 
     bool sync();
@@ -117,6 +125,7 @@ private:
     int findNextNBlock(int firstBlock, int n);
     bool isOpened(const std::string& fullPath);
 
+    static std::string getNameFromEntryPointer(char* p);
     static bool checkName(const std::string& name);
     static std::list<std::string> splitPath(const std::string& fullpath);
 
