@@ -67,28 +67,20 @@ bool Disk::isValid()
     }
 }
 
-long Disk::read(char* buf, int sector, int length)
+bool Disk::read(char* buf, int sector)
 {
-    if (length < 0)
-        return 0;
-
     m_ioFile.seekg(kSectorSize * sector, ios::beg);
-    m_ioFile.read(buf, length);
+    m_ioFile.read(buf, kSectorSize);
 
-    return m_ioFile.gcount();
+    return m_ioFile.gcount() == kSectorSize;
 }
 
-long Disk::write(char *buf, int sector, int length)
+bool Disk::write(char *buf, int sector)
 {
-    if (length < 0)
-        return 0;
-    if (kSectorSize * sector + length > kSectorSize * kNumOfSector) // 数据尾部越过磁盘大小，拒绝写入
-        return 0;
-
     m_ioFile.seekp(kSectorSize * sector, ios::beg);
     auto posBefore = m_ioFile.tellp();
-    m_ioFile.write(buf, length);
+    m_ioFile.write(buf, kSectorSize);
     auto posAfter = m_ioFile.tellp();
 
-    return posAfter - posBefore;
+    return posAfter - posBefore == kSectorSize;
 }

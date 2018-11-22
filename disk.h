@@ -40,18 +40,18 @@ public:
      * @param buf Buffer to store data.
      * @param sector Start sector.
      * @param length Number of bytes to read.
-     * @return Number of bytes read.
+     * @return true if succeeded.
      */
-    long read(char* buf, int sector, int length);
+    bool read(char* buf, int sector);
     /**
      * @brief write Write data to disk.
      *
      * @param buf Buffer to read data.
      * @param sector Start sector.
      * @param length Number of bytes to write.
-     * @return Number of bytes written.
+     * @return true if succeeded.
      */
-    long write(char* buf, int sector, int length);
+    bool write(char* buf, int sector);
 
 private:
     std::fstream m_ioFile;
