@@ -15,23 +15,12 @@ bool Disk::CreateDisk(const std::__cxx11::string &filePath)
     using std::cerr;
     using std::ios;
     using std::endl;
-    fstream f;
-
-    cerr << "Creating disk" << "\n";
-    f.open(filePath, ios::in);
-    if (f.good())
-    {
-        f.close();
-        cerr << "Can't create disk " << filePath << ": file existed in filesystem." << endl;
-        return false;
-    }
 
     std::ofstream newFile(filePath);
     for (int i = 0; i != kNumOfSector * kSectorSize; ++i)
     {
         newFile.write("", 1); // one byte a time
     }
-    newFile.close();
 
     return newFile.good();
 }
@@ -87,5 +76,5 @@ bool Disk::write(char *buf, int sector)
 
 bool Disk::sync()
 {
-    m_ioFile.sync(); // NOTE: 这个地方似乎不支持用 clang 编译，clang-7.0.0 on Archlinux x64
+    return m_ioFile.sync() == 0; // NOTE: 这个地方似乎不支持用 clang 编译，clang-7.0.0 on Archlinux x64
 }

@@ -154,7 +154,7 @@ public:
     /**
      * @brief findChild
      * @param name 子项名。
-     * @return 如果子项存在，返回子项，否则返回自身。
+     * @return 如果子项存在，返回子项，否则返回 null。
      */
     std::shared_ptr<Entry> findChild(const std::string& name);
 //    std::weak_ptr<Entry> addChild(const std::string& name);
