@@ -53,6 +53,8 @@ public:
      */
     bool write(char* buf, int sector);
 
+    bool sync();
+
 private:
     std::fstream m_ioFile;
 };

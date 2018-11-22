@@ -16,6 +16,9 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <list>
+#include <mutex>
+#include <unordered_map>
 
 class Entry;
 
@@ -24,8 +27,10 @@ class FileSystem
 public:
     static const int kBlockSize = 64; // 块大小，本程序为了简便等于磁盘扇区大小
     static const int kFatEntrySize = 1; // 每个 FAT 条目的大小（字节）
+    static const int kRawEntrySize = 8; // 目录项大小
     static const int kMaxOpenedFiles = 5;
     static const int kRawFileNameLength = 5;
+    static const int END_OF_FILE = -1;
 
     enum Attribute {
         ReadOnly = 1,
@@ -51,22 +56,25 @@ public:
     bool initFileSystem();
 
     std::shared_ptr<Entry> rootEntry();
-    std::shared_ptr<Entry> getEntry(const std::string& path);
+    std::shared_ptr<Entry> getEntry(const std::string& fullPath);
+    bool exist(const std::string& fullPath);
 
     bool createFile(const std::string& fullPath, Attributes attributes);
     bool openFile(const std::string& fullPath, OpenModes openModes);
     std::unique_ptr<std::string> readFile(const std::string& fullPath, int length);
-    int writeFile(const std::string& fullPath, char* buffer, int length);
+    int writeFile(const std::string& fullPath, char* m_buffer, int length);
     bool closeFile(const std::string& fullPath);
 
     bool createDir(const std::string& fullPath);
     bool removeDir(const std::string& fullPath);
-    std::shared_ptr<Entry> listEntries(const std::string& fullpath);
+    //std::shared_ptr<Entry> listEntries(const std::string& fullpath);
+
+    bool sync();
 
 private:
     // 文件描述符
     struct OpenedFile {
-        std::string path;
+        std::string fullPath;
         Attributes attributes;
         int blockNumber;
         int length;
@@ -75,21 +83,42 @@ private:
         int p; // put pointer
     };
 
+    static const int kEntryAttributesIndex = 5;
+    static const int kEntryBlockStartIndex = 6;
+    static const int kEntryNumOfBlocksIndex = 7;
+
     const int kFatSize; // FAT 大小
     const int kNumOfFatBlocks; // FAT 占用的块数
     const int kRootBlockNumber; // 根目录起始块地址
 
     Disk& m_disk;
-    char* fat;
-    char* buffer;
+    char* m_fat;
+    char* m_buffer;
     std::shared_ptr<Entry> m_rootEntry;
-    std::array<OpenedFile, kMaxOpenedFiles> m_openedFiles;
-    std::array<bool, kMaxOpenedFiles> m_openedFilesStat; // true 表示这个位置的文件描述符已被点用
+    std::unordered_map<std::string, std::shared_ptr<OpenedFile>> m_openedFiles;
+
+    // 互斥锁
+    std::mutex m_bufferMutex;
+    std::mutex m_fatMutex;
 
     bool loadFat();
     bool saveFat();
+    /**
+     * @brief nextAvailableBlock
+     * @return 如果有可用块则为可用块号，否则为 -1。
+     */
+    int nextAvailableBlock();
+    /**
+     * @brief findNextNBlock
+     * @param firstBlock
+     * @param n
+     * @return firstBlock 之后 n 块的块号，如果结果不存在，返回 -1。
+     */
+    int findNextNBlock(int firstBlock, int n);
+    bool isOpened(const std::string& fullPath);
 
-    static bool checkName(const std::string& name) { return name.length() > 0 && name.length() < kRawFileNameLength; }
+    static bool checkName(const std::string& name);
+    static std::list<std::string> splitPath(const std::string& fullpath);
 
     friend class Entry;
 };

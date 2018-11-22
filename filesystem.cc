@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <list>
+#include <mutex>
 
 FileSystem::FileSystem(Disk &disk)
     : kFatSize(Disk::kNumOfSector * Disk::kSectorSize / kBlockSize),
@@ -15,13 +16,13 @@ FileSystem::FileSystem(Disk &disk)
       m_disk(disk)
 {
     // FAT
-    fat = new char[kFatSize];
-    std::for_each(fat, fat + kFatSize, [](char &e){
+    m_fat = new char[kFatSize];
+    std::for_each(m_fat, m_fat + kFatSize, [](char &e){
         e = 0;
     });
 
     // buffer
-    buffer = new char[Disk::kSectorSize];
+    m_buffer = new char[Disk::kSectorSize];
 
     // load FAT
     bool succeeded = loadFat();
@@ -37,17 +38,12 @@ FileSystem::FileSystem(Disk &disk)
     m_rootEntry->m_blockStart = kRootBlockNumber;
     m_rootEntry->m_numBlock = 0;
     m_rootEntry->m_parent = m_rootEntry->self();
-
-    // opend files
-    std::for_each(std::begin(m_openedFilesStat), std::end(m_openedFilesStat), [](bool& e){
-        e = false;
-    });
 }
 
 FileSystem::~FileSystem()
 {
-    delete[] fat;
-    delete[] buffer;
+    delete[] m_fat;
+    delete[] m_buffer;
 }
 
 bool FileSystem::initFileSystem()
@@ -56,10 +52,10 @@ bool FileSystem::initFileSystem()
     // init fat
     for (int i = 0; i != kNumOfFatBlocks; ++i)
     {
-        fat[i] = -1;
+        m_fat[i] = -1;
     }
-    fat[23] = fat[49] = -2; // 表示有两个坏块
-    fat[kRootBlockNumber] = -1; // 根目录块已占用
+    m_fat[23] = m_fat[49] = -2; // 表示有两个坏块
+    m_fat[kRootBlockNumber] = -1; // 根目录块已占用
     // 保存 FAT
     succeeded = saveFat();
     if (!succeeded) return false;
@@ -67,11 +63,14 @@ bool FileSystem::initFileSystem()
     // init root directory
     for (int i = 0; i != 8; ++i)
     {
-        buffer[i * 8] = '$'; // 所有的目录项都为空
+        m_buffer[i * 8] = '$'; // 所有的目录项都为空
     }
     // 写入根目录
-    succeeded = m_disk.write(buffer, kRootBlockNumber);
+    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+    succeeded = m_disk.write(m_buffer, kRootBlockNumber);
     if (!succeeded) return false;
+
+    sync(); // 更改持久化
 
     return true;
 }
@@ -81,37 +80,200 @@ std::shared_ptr<Entry> FileSystem::rootEntry()
     return m_rootEntry;
 }
 
-std::shared_ptr<Entry> FileSystem::getEntry(const std::string &path)
+std::shared_ptr<Entry> FileSystem::getEntry(const std::string &fullPath)
 {
-    if (path[0] != '/') return nullptr; // 不是绝对路径
+    if (fullPath[0] != '/') return nullptr; // 不是绝对路径
 
-    std::list<std::string> names;
-    std::string name;
-    std::istringstream iss(path);
-    while (getline(iss, name, '/'))
-    {
-        names.push_back(name);
-    }
-    names.pop_front(); // 移除没有名字的根目录
+    auto names = splitPath(fullPath);
 
     auto targetEntry = m_rootEntry;
-    for (const auto& n : names)
+    for (const auto& name : names)
     {
-        targetEntry = targetEntry->findChild(n);
+        targetEntry = targetEntry->findChild(name);
         if (targetEntry == nullptr) break;
     }
 
     return targetEntry;
 }
 
+bool FileSystem::exist(const std::string &fullPath)
+{
+    return getEntry(fullPath) != nullptr;
+}
+
+bool FileSystem::createFile(const std::string &fullPath, FileSystem::Attributes attributes)
+{
+    std::string parentPath = fullPath.substr(0, fullPath.find_last_of('/'));
+    std::string fileName = fullPath.substr(fullPath.find_last_of('/') + 1);
+    if (!checkName(fileName)) return false; // 文件名不合法
+    if (!exist(parentPath)) return false; // 父目录不存在
+    auto parent = getEntry(parentPath);
+    if (parent->getChildren().size() == 8) return false; // 父目录子项数超限制
+    if ((attributes & FileSystem::File) == false) return false; // 不是文件（属性错误）
+    if ((attributes & FileSystem::ReadOnly) == true) return false; // 不允许为只读
+    if ((attributes & FileSystem::Directory) == true) return false; // 不允许为目录
+
+    std::lock_guard<std::mutex> fatLock(m_fatMutex);
+
+    int blockNumber;
+    if ((blockNumber = nextAvailableBlock()) < 0) return false; // 没有足够的块可供分配
+
+    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+
+    // 填充文件内容
+    m_buffer[0] = END_OF_FILE;
+    if (!m_disk.write(m_buffer, blockNumber)) return false;
+
+    // 修改目录项
+
+    if (!m_disk.read(m_buffer, parent->m_blockStart)) return false;
+    char* entryPointer = m_buffer; // 目录项指针
+    for (int i = 0; i != 8; ++i)
+    {
+        entryPointer = m_buffer + kRawEntrySize * i;
+        if (entryPointer[0] == '$') // 找到一个空目录项
+        {
+            break;
+        }
+    }
+    // 填充文件名
+    for (size_t i = 0; i != fileName.length(); ++i)
+    {
+        entryPointer[i] = fileName[i];
+    }
+    entryPointer[fileName.length()] = '$'; // 设置文件名结束标志
+    // 填充其余信息
+    entryPointer[kEntryAttributesIndex] = attributes;
+    entryPointer[kEntryBlockStartIndex] = blockNumber;
+    entryPointer[kEntryNumOfBlocksIndex] = 1;
+    // 写入磁盘
+    if (!m_disk.write(m_buffer, parent->m_blockStart)) return false;
+
+    // 修改 FAT
+    m_fat[blockNumber] = -1;
+    if (!saveFat()) return false;
+
+    sync(); // 更改持久化
+
+    // 顺便打开文件，是否成功不打紧
+    openFile(fullPath, Read | Write);
+
+    return true;
+    // todo 适应可变 sector size
+}
+
+bool FileSystem::openFile(const std::string &fullPath, FileSystem::OpenModes openModes)
+{
+    if (isOpened(fullPath)) return true; // 已经打开
+    if (m_openedFiles.size() == kMaxOpenedFiles) return false; // 打开文件数量超限制
+    if (!exist(fullPath)) return false; // 文件不存在
+    auto fileEntry = getEntry(fullPath);
+    if ((fileEntry->m_attrbutes & ReadOnly) == true &&
+            (openModes & Write) == true) return false; // 不能以写方式打开只读文件
+
+    // 获取信息
+    int blockStart = fileEntry->m_blockStart;
+    int numOfBlock = fileEntry->m_numBlock;
+    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+    if (!m_disk.read(m_buffer, findNextNBlock(blockStart, numOfBlock - 1))) return false;
+    int tailLength = 0;
+    for ( ; m_buffer[tailLength] != END_OF_FILE; ++tailLength)
+    {
+        /* empty */
+    }
+    int length = kBlockSize * (numOfBlock - 1) + tailLength;
+
+    // 加入打开列表
+    std::shared_ptr<OpenedFile> of = std::make_shared<OpenedFile>();
+    of->fullPath = fullPath;
+    of->attributes = fileEntry->m_attrbutes;
+    of->blockNumber = blockStart;
+    of->length = length;
+    of->modes = openModes;
+    of->g = 0;
+    of->p = length;
+    m_openedFiles.insert({fullPath, of});
+
+    return true;
+}
+
+bool FileSystem::closeFile(const std::string &fullPath)
+{
+    // 等待缓存锁，即等待所有读写操作完成
+    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+
+    sync(); // 更改持久化
+
+    auto iter = m_openedFiles.find(fullPath);
+    if (iter == m_openedFiles.end()) return false;
+    m_openedFiles.erase(iter);
+
+    return true;
+}
+
+bool FileSystem::sync()
+{
+    return m_disk.sync() == 0;
+}
+
 bool FileSystem::loadFat()
 {
-    return m_disk.read(fat, 0) && m_disk.read(fat + Disk::kSectorSize, 1);
+    return m_disk.read(m_fat, 0) && m_disk.read(m_fat + Disk::kSectorSize, 1);
 }
 
 bool FileSystem::saveFat()
 {
-    return m_disk.write(fat, 0) && m_disk.write(fat + Disk::kSectorSize, 1);
+    return m_disk.write(m_fat, 0) && m_disk.write(m_fat + Disk::kSectorSize, 1) && sync();
+}
+
+int FileSystem::nextAvailableBlock()
+{
+    for(int i = 0; i != kFatSize; ++i)
+    {
+        if (m_fat[i] == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int FileSystem::findNextNBlock(int firstBlock, int n)
+{
+    int nextNBlock = firstBlock;
+    for (int i = 0; i < n; ++i)
+    {
+        nextNBlock = m_fat[nextNBlock];
+        if (nextNBlock == -1)
+            break;
+    }
+    return nextNBlock;
+}
+
+bool FileSystem::isOpened(const std::string &fullPath)
+{
+    return m_openedFiles.find(fullPath) != std::end(m_openedFiles);
+}
+
+bool FileSystem::checkName(const std::string &name)
+{
+    return name.length() > 0 && name.length() < kRawFileNameLength && name.find("/") == name.length();
+}
+
+std::list<std::string> FileSystem::splitPath(const std::string &fullPath)
+{
+    std::list<std::string> names;
+    std::string name;
+    std::istringstream iss(fullPath);
+    while (getline(iss, name, '/'))
+    {
+        names.push_back(name);
+    }
+    if (names.front().length() == 0)
+    {
+        names.pop_front(); // 移除没有名字的根目录
+    }
+    return names;
 }
 
 std::vector<std::shared_ptr<Entry> > Entry::getChildren()
@@ -125,7 +287,7 @@ std::vector<std::shared_ptr<Entry> > Entry::getChildren()
 
     for (int p = 0; p != 8; ++p)
     {
-        char* rawData = buffer + p;
+        char* rawData = buffer + FileSystem::kRawEntrySize * p;
         // find name
         std::string name;
         for (int i = 0; i != FileSystem::kRawFileNameLength; ++i)
@@ -142,9 +304,9 @@ std::vector<std::shared_ptr<Entry> > Entry::getChildren()
         std::shared_ptr<Entry> entry(new Entry(m_disk));
         entry->m_parent = self();
         entry->m_name = name;
-        entry->m_attrbutes = rawData[5];
-        entry->m_blockStart = rawData[6];
-        entry->m_numBlock = rawData[7];
+        entry->m_attrbutes = rawData[FileSystem::kEntryAttributesIndex];
+        entry->m_blockStart = rawData[FileSystem::kEntryBlockStartIndex];
+        entry->m_numBlock = rawData[FileSystem::kEntryNumOfBlocksIndex];
         // 加入返回结果集
         ret.push_back(entry);
     }

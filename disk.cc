@@ -84,3 +84,8 @@ bool Disk::write(char *buf, int sector)
 
     return posAfter - posBefore == kSectorSize;
 }
+
+bool Disk::sync()
+{
+    m_ioFile.sync(); // NOTE: 这个地方似乎不支持用 clang 编译，clang-7.0.0 on Archlinux x64
+}
