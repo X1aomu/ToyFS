@@ -112,6 +112,7 @@ private:
     std::mutex m_bufferMutex;
     std::mutex m_fatMutex;
 
+    // FAT 相关函数
     bool loadFat();
     bool saveFat();
     /**
@@ -127,6 +128,7 @@ private:
      */
     int findNextNBlock(int firstBlock, int n);
 
+    // 实用函数
     static std::string getNameFromEntryPointer(char* p);
     static char* findChildEntryPointer(char* parentEntryPointer, const std::string& childName);
     static bool checkName(const std::string& name);

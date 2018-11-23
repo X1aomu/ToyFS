@@ -137,15 +137,7 @@ bool FileSystem::createDir(const std::string &fullPath)
     // 修改父目录项
 
     if (!m_disk.read(m_buffer, parent->m_blockStart)) return false;
-    char* entryPointer = m_buffer; // 目录项指针
-    for (int i = 0; i != kMaxChildEntries; ++i)
-    {
-        entryPointer = m_buffer + kEntrySize * i;
-        if (entryPointer[0] == '$') // 找到一个空目录项
-        {
-            break;
-        }
-    }
+    char* entryPointer = findChildEntryPointer(m_buffer, ""); // 一个空目录项指针
     // 填充目录名
     for (size_t i = 0; i != dirName.length(); ++i)
     {
@@ -201,15 +193,7 @@ bool FileSystem::createFile(const std::string &fullPath, FileSystem::Attributes 
         // 修改父目录项
 
         if (!m_disk.read(m_buffer, parent->m_blockStart)) return false;
-        char* entryPointer = m_buffer; // 目录项指针
-        for (int i = 0; i != kMaxChildEntries; ++i)
-        {
-            entryPointer = m_buffer + kEntrySize * i;
-            if (entryPointer[0] == '$') // 找到一个空目录项
-            {
-                break;
-            }
-        }
+        char* entryPointer = findChildEntryPointer(m_buffer, ""); // 一个空目录项指针
         // 填充文件名
         for (size_t i = 0; i != fileName.length(); ++i)
         {
@@ -410,16 +394,8 @@ bool FileSystem::setFileAttributes(const std::string &fullPath, FileSystem::Attr
 
     auto parentEntry = entry->parent();
     if (!m_disk.read(m_buffer, parentEntry->m_blockStart)) return false;
-    for (int i = 0; i != kMaxChildEntries; ++i)
-    {
-        char* entryPointer = m_buffer + kEntrySize * i;
-        auto name = getNameFromEntryPointer(entryPointer);
-        if (name == entry->name()) // 找到对应的目录项
-        {
-            entryPointer[kEntryAttributesIndex] = attributes;
-            break;
-        }
-    }
+    char* fileEntryPointer = findChildEntryPointer(m_buffer, entry->name());
+    fileEntryPointer[kEntryAttributesIndex] = attributes;
     if (!m_disk.write(m_buffer, parentEntry->m_blockStart)) return false;
 
     if (!sync()) return false;
@@ -450,16 +426,8 @@ bool FileSystem::deleteEntry(const std::string &fullPath)
     // 删除目录项
     auto parentEntry = entry->parent();
     if (!m_disk.read(m_buffer, parentEntry->m_blockStart)) return false;
-    for (int i = 0; i != kMaxChildEntries; ++i)
-    {
-        char* entryPointer = m_buffer + kEntrySize * i;
-        auto name = getNameFromEntryPointer(entryPointer);
-        if (name == entry->name()) // 找到对应的目录项
-        {
-            entryPointer[0] = '$'; // 设该目录项为空目录项
-            break;
-        }
-    }
+    char* fileEntryPointer = findChildEntryPointer(m_buffer, entry->name());
+    fileEntryPointer[0] = '$'; // 设该目录项为空目录项
     if (!m_disk.write(m_buffer, parentEntry->m_blockStart)) return false;
 
     // 释放 FAT
