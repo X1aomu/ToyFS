@@ -109,8 +109,9 @@ private:
     std::unordered_map<std::string, std::shared_ptr<OpenedFile>> m_openedFiles;
 
     // 互斥锁
-    std::mutex m_bufferMutex;
-    std::mutex m_fatMutex;
+    // 注意：如需占用多个锁，请按顺序加锁
+    std::mutex m_mutex1Fat;
+    std::mutex m_mutex2Buffer;
 
     // FAT 相关函数
     bool loadFat();

@@ -64,7 +64,7 @@ bool FileSystem::initFileSystem()
     succeeded = saveFat();
     if (!succeeded) return false;
 
-    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+    std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer);
 
     // init root directory
     for (int i = 0; i != kMaxChildEntries; ++i)
@@ -120,12 +120,11 @@ bool FileSystem::createDir(const std::string &fullPath)
     auto parent = getEntry(parentPath);
     if (parent->getChildren().size() == kMaxChildEntries) return false; // 父目录子项数超限制
 
-    std::lock_guard<std::mutex> fatLock(m_fatMutex);
+    std::lock_guard<std::mutex> fatLock(m_mutex1Fat);
+    std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer);
 
     int blockNumber;
     if ((blockNumber = nextAvailableBlock()) < 0) return false; // 没有足够的块可供分配
-
-    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
 
     // 填充目录项
     for (int i = 0; i != kMaxChildEntries; ++i)
@@ -180,8 +179,8 @@ bool FileSystem::createFile(const std::string &fullPath, FileSystem::Attributes 
     if ((attributes & FileSystem::Directory)) return false; // 不允许为目录
 
     {
-        std::lock_guard<std::mutex> fatLock(m_fatMutex);
-        std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+        std::lock_guard<std::mutex> fatLock(m_mutex1Fat);
+        std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer);
 
         int blockNumber;
         if ((blockNumber = nextAvailableBlock()) < 0) return false; // 没有足够的块可供分配
@@ -232,7 +231,9 @@ bool FileSystem::openFile(const std::string &fullPath, FileSystem::OpenModes ope
     // 获取信息
     int blockStart = fileEntry->m_blockStart;
     int numOfBlock = fileEntry->m_numBlock;
-    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+
+    std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer);
+
     if (!m_disk.read(m_buffer, findNextNBlock(blockStart, numOfBlock - 1))) return false;
     int tailLength = 0;
     for ( ; m_buffer[tailLength] != END_OF_FILE; ++tailLength)
@@ -258,7 +259,7 @@ bool FileSystem::openFile(const std::string &fullPath, FileSystem::OpenModes ope
 bool FileSystem::closeFile(const std::string &fullPath)
 {
     // 等待缓存锁，即等待所有读写操作完成
-    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+    std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer); // lock buffer
 
     if (!sync()) return false; // 更改持久化
 
@@ -299,7 +300,7 @@ int FileSystem::readFile(const std::string &fullPath, char* buf_out, int length)
 
     while (wp < length)
     {
-        std::lock_guard<std::mutex> bufferLock(m_bufferMutex);
+        std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer);
         if (!m_disk.read(m_buffer, rBlockNumber)) break;
         while (wp < length && rp < kBlockSize)
         {
@@ -342,8 +343,8 @@ bool FileSystem::writeFile(const std::string &fullPath, char *buffer, int length
 
     while (rp < length)
     {
-        std::lock_guard<std::mutex> lock1(m_fatMutex);
-        std::lock_guard<std::mutex> lock2(m_bufferMutex);
+        std::lock_guard<std::mutex> lock1(m_mutex1Fat);
+        std::lock_guard<std::mutex> lock2(m_mutex2Buffer);
         if (!m_disk.read(m_buffer, wBlockNumber)) break; // 先读入缓存
         while (rp < length && wp < kBlockSize)
         {
@@ -390,7 +391,7 @@ bool FileSystem::setFileAttributes(const std::string &fullPath, FileSystem::Attr
 
     if (!(attributes & File)) return false; // 新属性中不能没有文件属性
 
-    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
+    std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer); // lock buffer
 
     auto parentEntry = entry->parent();
     if (!m_disk.read(m_buffer, parentEntry->m_blockStart)) return false;
@@ -420,8 +421,8 @@ bool FileSystem::deleteEntry(const std::string &fullPath)
         if (isOpened(fullPath)) return false; // 不能删除已打开文件
     }
 
-    std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
-    std::lock_guard<std::mutex> fatLock(m_fatMutex);
+    std::lock_guard<std::mutex> fatLock(m_mutex1Fat);
+    std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer);
 
     // 删除目录项
     auto parentEntry = entry->parent();

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <mutex>
 
 bool Disk::CreateDisk(const std::__cxx11::string &filePath)
 {
@@ -27,6 +28,8 @@ Disk::~Disk()
 
 bool Disk::isValid()
 {
+    std::lock_guard<std::mutex> lock(m_mutex1Read);
+
     if (m_ioFile.good())
     {
         auto currentPos = m_ioFile.tellg();
@@ -48,6 +51,8 @@ bool Disk::isValid()
 
 bool Disk::read(char* buf, int sector)
 {
+    std::lock_guard<std::mutex> lock(m_mutex1Read);
+
     m_ioFile.seekg(kSectorSize * sector, std::ios::beg);
     m_ioFile.read(buf, kSectorSize);
 
@@ -56,6 +61,8 @@ bool Disk::read(char* buf, int sector)
 
 bool Disk::write(char *buf, int sector)
 {
+    std::lock_guard<std::mutex> lock(m_mutex2Write);
+
     m_ioFile.seekp(kSectorSize * sector, std::ios::beg);
     auto posBefore = m_ioFile.tellp();
     m_ioFile.write(buf, kSectorSize);
