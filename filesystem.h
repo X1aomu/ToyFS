@@ -64,9 +64,10 @@ public:
     bool createDir(const std::string& fullPath);
     bool createFile(const std::string& fullPath, Attributes attributes);
     bool openFile(const std::string& fullPath, OpenModes openModes);
+    bool closeFile(const std::string& fullPath);
+    std::list<std::string> getOpenedFileList();
     std::unique_ptr<std::string> readFile(const std::string& fullPath, int length);
     int writeFile(const std::string& fullPath, char* m_buffer, int length);
-    bool closeFile(const std::string& fullPath);
     bool setFileAttributes(const std::string& fullPath, Attributes attributes);
     /**
      * @brief deleteEntry
@@ -138,9 +139,10 @@ public:
     Entry(Disk& disk) : m_disk(disk) {}
 
     //bool isPathValid();
-    bool isDir() { return m_attrbutes & FileSystem::Directory; }
-    bool isReadOnly() { return m_attrbutes & FileSystem::ReadOnly; }
-    bool isSystem() { return m_attrbutes & FileSystem::System; }
+    bool isDir() { return m_attributes & FileSystem::Directory; }
+    bool isReadOnly() { return m_attributes & FileSystem::ReadOnly; }
+    bool isSystem() { return m_attributes & FileSystem::System; }
+    FileSystem::Attributes attributes() { return m_attributes; }
 
     std::string name() { return m_name; }
     std::string fullpath();
@@ -162,7 +164,7 @@ public:
 private:
     Disk& m_disk;
     std::string m_name;
-    FileSystem::Attributes m_attrbutes;
+    FileSystem::Attributes m_attributes;
     int m_blockStart;
     int m_numBlock;
     std::shared_ptr<Entry> m_parent;
@@ -176,7 +178,8 @@ inline std::string Entry::fullpath()
     {
         return name();
     }
-    return parent()->fullpath() + "/" + name();
+    auto fullPath = parent()->fullpath() + "/" + name();
+    return fullPath.substr(fullPath.find_first_not_of('/') - 1);
 }
 
 #endif // TOYFS_FILESYSTEM_H_

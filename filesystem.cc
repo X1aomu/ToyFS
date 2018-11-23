@@ -38,7 +38,7 @@ FileSystem::FileSystem(Disk &disk)
     // root entry
     m_rootEntry = std::make_shared<Entry>(m_disk);
     m_rootEntry->m_name = "/";
-    m_rootEntry->m_attrbutes = FileSystem::Directory | FileSystem::System;
+    m_rootEntry->m_attributes = FileSystem::Directory | FileSystem::System;
     m_rootEntry->m_blockStart = kRootBlockNumber;
     m_rootEntry->m_numBlock = 0;
     m_rootEntry->m_parent = m_rootEntry->self();
@@ -243,7 +243,7 @@ bool FileSystem::openFile(const std::string &fullPath, FileSystem::OpenModes ope
     if (m_openedFiles.size() == kMaxOpenedFiles) return false; // 打开文件数量超限制
     if (!exist(fullPath)) return false; // 文件不存在
     auto fileEntry = getEntry(fullPath);
-    if ((fileEntry->m_attrbutes & ReadOnly) && (openModes & Write)) return false; // 不能以写方式打开只读文件
+    if ((fileEntry->m_attributes & ReadOnly) && (openModes & Write)) return false; // 不能以写方式打开只读文件
 
     // 获取信息
     int blockStart = fileEntry->m_blockStart;
@@ -260,7 +260,7 @@ bool FileSystem::openFile(const std::string &fullPath, FileSystem::OpenModes ope
     // 加入打开列表
     std::shared_ptr<OpenedFile> of = std::make_shared<OpenedFile>();
     of->fullPath = fullPath;
-    of->attributes = fileEntry->m_attrbutes;
+    of->attributes = fileEntry->m_attributes;
     of->blockNumber = blockStart;
     of->length = length;
     of->modes = openModes;
@@ -285,13 +285,26 @@ bool FileSystem::closeFile(const std::string &fullPath)
     return true;
 }
 
+std::list<std::string> FileSystem::getOpenedFileList()
+{
+    std::list<std::string> ret;
+    for(auto const& e : m_openedFiles)
+    {
+        ret.push_back((e.second)->fullPath);
+    }
+    return ret;
+}
+
 bool FileSystem::setFileAttributes(const std::string &fullPath, FileSystem::Attributes attributes)
 {
     if (!exist(fullPath)) return  false;
     auto entry = getEntry(fullPath);
     if (entry->isDir()) return false; // 不能为目录设置属性
+    if (isOpened(fullPath)) return false; // 文件已被打开，不能改属性
 
     attributes &= ReadOnly | System | File; // 只保留有效的属性
+
+    if (!(attributes & File)) return false; // 新属性中不能没有文件属性
 
     std::lock_guard<std::mutex> bufferLock(m_bufferMutex); // lock buffer
 
@@ -351,12 +364,12 @@ bool FileSystem::deleteEntry(const std::string &fullPath)
 
     // 释放 FAT
     int blockNumber = entry->m_blockStart;
-    while (m_fat[blockNumber] != -1)
+    do
     {
         int next = m_fat[blockNumber];
         m_fat[blockNumber] = 0;
         blockNumber = next;
-    }
+    } while (m_fat[blockNumber] != -1);
     if (!saveFat()) return false;
 
     if (!sync()) return false;
@@ -457,7 +470,7 @@ std::vector<std::shared_ptr<Entry> > Entry::getChildren()
         std::shared_ptr<Entry> entry(new Entry(m_disk));
         entry->m_parent = self();
         entry->m_name = name;
-        entry->m_attrbutes = entryPointer[FileSystem::kEntryAttributesIndex];
+        entry->m_attributes = entryPointer[FileSystem::kEntryAttributesIndex];
         entry->m_blockStart = entryPointer[FileSystem::kEntryBlockStartIndex];
         entry->m_numBlock = entryPointer[FileSystem::kEntryNumOfBlocksIndex];
         // 加入返回结果集
