@@ -31,7 +31,7 @@ public:
     static const int kMaxChildEntries = 8; // 一个目录最大的目录项数
     static const int kMaxOpenedFiles = 5;
     static const int kRawFileNameLength = 5;
-    static const int END_OF_FILE = -1;
+    static const int END_OF_FILE = '#';
     static_assert (kEntrySize * kMaxChildEntries == kBlockSize, "Mismatch constants.");
 
     enum Attribute {
@@ -65,9 +65,11 @@ public:
     bool createFile(const std::string& fullPath, Attributes attributes);
     bool openFile(const std::string& fullPath, OpenModes openModes);
     bool closeFile(const std::string& fullPath);
+    bool isOpened(const std::string& fullPath);
     std::list<std::string> getOpenedFileList();
     std::unique_ptr<std::string> readFile(const std::string& fullPath, int length);
-    int writeFile(const std::string& fullPath, char* m_buffer, int length);
+    int readFile(const std::string& fullPath, char* buf_out, int length);
+    bool writeFile(const std::string& fullPath, char* buf_in, int length);
     bool setFileAttributes(const std::string& fullPath, Attributes attributes);
     /**
      * @brief deleteEntry
@@ -86,7 +88,7 @@ private:
         std::string fullPath;
         Attributes attributes;
         int blockNumber;
-        int length;
+        int numOfBlocks;
         OpenModes modes;
         int g; // get pointer
         int p; // put pointer
@@ -124,9 +126,9 @@ private:
      * @return firstBlock 之后 n 块的块号，如果结果不存在，返回 -1。
      */
     int findNextNBlock(int firstBlock, int n);
-    bool isOpened(const std::string& fullPath);
 
     static std::string getNameFromEntryPointer(char* p);
+    static char* findChildEntryPointer(char* parentEntryPointer, const std::string& childName);
     static bool checkName(const std::string& name);
     static std::list<std::string> splitPath(const std::string& fullpath);
 
@@ -148,6 +150,8 @@ public:
     std::string fullpath();
     std::shared_ptr<Entry> self() { return shared_from_this(); }
     std::shared_ptr<Entry> parent() { return m_parent; }
+    int size() { return m_numBlock * FileSystem::kBlockSize; }
+
     /**
      * @brief getChildren
      * @return 如果是目录则为子项目列表，否刚返回空列表。

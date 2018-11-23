@@ -4,18 +4,8 @@
 #include <iostream>
 #include <limits>
 
-using std::fstream;
-using std::cerr;
-using std::ios;
-using std::endl;
-
 bool Disk::CreateDisk(const std::__cxx11::string &filePath)
 {
-    using std::fstream;
-    using std::cerr;
-    using std::ios;
-    using std::endl;
-
     std::ofstream newFile(filePath);
     for (int i = 0; i != kNumOfSector * kSectorSize; ++i)
     {
@@ -27,7 +17,7 @@ bool Disk::CreateDisk(const std::__cxx11::string &filePath)
 
 Disk::Disk(const std::string &diskFile)
 {
-    m_ioFile.open(diskFile, ios::in | ios::out | ios::binary);
+    m_ioFile.open(diskFile, std::ios::in | std::ios::out | std::ios::binary);
 }
 
 Disk::~Disk()
@@ -41,7 +31,7 @@ bool Disk::isValid()
     {
         auto currentPos = m_ioFile.tellg();
 
-        m_ioFile.seekg(0, ios::beg);
+        m_ioFile.seekg(0, std::ios::beg);
         m_ioFile.ignore(std::numeric_limits<std::streamsize>::max());
         auto fileSize = m_ioFile.gcount();
         m_ioFile.clear();
@@ -58,7 +48,7 @@ bool Disk::isValid()
 
 bool Disk::read(char* buf, int sector)
 {
-    m_ioFile.seekg(kSectorSize * sector, ios::beg);
+    m_ioFile.seekg(kSectorSize * sector, std::ios::beg);
     m_ioFile.read(buf, kSectorSize);
 
     return m_ioFile.gcount() == kSectorSize;
@@ -66,7 +56,7 @@ bool Disk::read(char* buf, int sector)
 
 bool Disk::write(char *buf, int sector)
 {
-    m_ioFile.seekp(kSectorSize * sector, ios::beg);
+    m_ioFile.seekp(kSectorSize * sector, std::ios::beg);
     auto posBefore = m_ioFile.tellp();
     m_ioFile.write(buf, kSectorSize);
     auto posAfter = m_ioFile.tellp();

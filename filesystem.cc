@@ -262,7 +262,7 @@ bool FileSystem::openFile(const std::string &fullPath, FileSystem::OpenModes ope
     of->fullPath = fullPath;
     of->attributes = fileEntry->m_attributes;
     of->blockNumber = blockStart;
-    of->length = length;
+    of->numOfBlocks = numOfBlock;
     of->modes = openModes;
     of->g = 0;
     of->p = length;
@@ -293,6 +293,106 @@ std::list<std::string> FileSystem::getOpenedFileList()
         ret.push_back((e.second)->fullPath);
     }
     return ret;
+}
+
+int FileSystem::readFile(const std::string &fullPath, char* buf_out, int length)
+{
+    if (!isOpened(fullPath)) // 文件没有打开
+    {
+        if (!openFile(fullPath, Read)) return 0; // 以读方式打开文件失败
+    }
+    std::shared_ptr<OpenedFile> fd = (m_openedFiles.find(fullPath))->second;
+    if (!(fd->modes & Read)) return 0; // 没有以读的方式打开文件
+
+    int rBlockNumber; // 当前读取的块号
+    int rp; // 当前读取的块内指针
+
+    // 初始化刚开始的读取块号和块内指针
+    rBlockNumber = findNextNBlock(fd->blockNumber, fd->g / kBlockSize);
+    rp = fd->g % kBlockSize;
+
+    int wp = 0; // write pointer on buffer
+
+    while (wp < length)
+    {
+        std::lock_guard<std::mutex> bufferLock(m_bufferMutex);
+        if (!m_disk.read(m_buffer, rBlockNumber)) break;
+        while (wp < length && rp < kBlockSize)
+        {
+            if (m_buffer[rp] == END_OF_FILE)
+            {
+                goto read_end;
+            }
+            buf_out[wp++] = m_buffer[rp++];
+            ++fd->g;
+        }
+        rBlockNumber = findNextNBlock(rBlockNumber, 1); // 找到下一文件块序号
+        rp = 0; // 重置 rp，从下一文件块的头部开始
+    }
+    read_end:
+    return wp;
+}
+
+bool FileSystem::writeFile(const std::string &fullPath, char *buffer, int length)
+{
+    if (!isOpened(fullPath)) // 文件没有打开
+    {
+        if (!openFile(fullPath, Read | Write)) return false; // 以写方式打开文件失败
+    }
+    std::shared_ptr<OpenedFile> fd = (m_openedFiles.find(fullPath))->second;
+    if (!(fd->modes & Write)) return false; // 文件不是以写方式打开的
+
+    int wBlockNumber; // 当前写入的块号
+    int wp; // 当前写入的块内指针
+
+    // 初始化刚开始的读取块号和块内指针
+    wBlockNumber = findNextNBlock(fd->blockNumber, fd->p / kBlockSize);
+    wp = fd->p % kBlockSize;
+
+    // 给被写入数据未尾追加 END_OF_FILE
+    std::string buf_in(buffer, buffer + length);
+    ++length;
+    buf_in.push_back(END_OF_FILE);
+
+    int rp = 0; // read pointer on buffer
+
+    while (rp < length)
+    {
+        std::lock_guard<std::mutex> lock1(m_fatMutex);
+        std::lock_guard<std::mutex> lock2(m_bufferMutex);
+        if (!m_disk.read(m_buffer, wBlockNumber)) break; // 先读入缓存
+        while (rp < length && wp < kBlockSize)
+        {
+            m_buffer[wp++] = buf_in[rp++];
+            ++fd->p;
+        }
+        if (!m_disk.write(m_buffer, wBlockNumber)) break; // 缓存满，写入磁盘
+
+        // 已经写完一个块，如果还有数据要写则分配新块
+        if (rp == length) break; // 没有更多数据，结束
+        int previousNumber = wBlockNumber;
+        wBlockNumber = nextAvailableBlock(); // 找到下一文件块序号
+        if (wBlockNumber == -1) return false; // 没有新块可供分配
+
+        // 修改 FAT
+        m_fat[previousNumber] = wBlockNumber;
+        m_fat[wBlockNumber] = -1;
+        saveFat(); // 保存 FAT
+
+        // 修改对应父目录项内记录的文件大小
+        auto fileEntry = getEntry(fullPath);
+        auto parentEntry = fileEntry->parent();
+        if (!m_disk.read(m_buffer, parentEntry->m_blockStart)) break;
+        char* fileEntryPointer = findChildEntryPointer(m_buffer, fileEntry->name());
+        ++fileEntryPointer[kEntryNumOfBlocksIndex];
+        if (!m_disk.write(m_buffer, parentEntry->m_blockStart)) break;
+
+        wp = 0; // 重置 rp，从下一文件块的头部开始
+    }
+
+    --fd->p; // 前面记多了一次 END_OF_FILE 的写入
+
+    return true;
 }
 
 bool FileSystem::setFileAttributes(const std::string &fullPath, FileSystem::Attributes attributes)
@@ -426,6 +526,20 @@ std::string FileSystem::getNameFromEntryPointer(char *p)
     char* end = p;
     for ( ; *end != '$'; ++end) {}
     return std::string(p, end);
+}
+
+char* FileSystem::findChildEntryPointer(char *parentEntryPointer, const std::string &childName)
+{
+    for (int i = 0; i != kMaxChildEntries; ++i)
+    {
+        char* childEntryPointer = parentEntryPointer + kEntrySize * i;
+        auto name = getNameFromEntryPointer(childEntryPointer);
+        if (name == childName) // 找到对应的目录项
+        {
+            return childEntryPointer;
+        }
+    }
+    return nullptr;
 }
 
 bool FileSystem::checkName(const std::string &name)
