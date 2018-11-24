@@ -27,34 +27,20 @@ CONFIG += c++11
 SOURCES += \
         main.cc \
     gui/mainwindow.cc \
-    gui/viewcontainer.cc \
-    gui/propertieswindow.cc \
-    gui/texteditingwindow.cc \
-    gui/locationbar.cc \
     gui/dirview.cc \
     gui/hexview.cc \
     disk.cc \
-    filesystem.cc \
-    global.cc
+    filesystem.cc
 
 HEADERS += \
     gui/mainwindow.h \
-    gui/viewcontainer.h \
-    gui/propertieswindow.h \
-    gui/texteditingwindow.h \
-    filesystem.h \
-    gui/locationbar.h \
     gui/dirview.h \
     gui/hexview.h \
-    disk.h \
-    global.h
+    filesystem.h \
+    disk.h
 
 FORMS += \
     gui/mainwindow.ui \
-    gui/viewcontainer.ui \
-    gui/propertieswindow.ui \
-    gui/texteditingwindow.ui \
-    gui/locationbar.ui \
     gui/dirview.ui \
     gui/hexview.ui
 
@@ -62,3 +48,5 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES +=

@@ -3,6 +3,8 @@
 
 #include <QWidget>
 
+#include "disk.h"
+
 namespace Ui {
 class HexView;
 }
@@ -15,8 +17,12 @@ public:
     explicit HexView(QWidget *parent = nullptr);
     ~HexView();
 
+    void setDisk(Disk *disk);
+
 private:
     Ui::HexView *ui;
+
+    Disk* m_disk;
 };
 
 #endif // HEXVIEW_H

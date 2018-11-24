@@ -3,7 +3,8 @@
 
 HexView::HexView(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::HexView)
+    ui(new Ui::HexView),
+    m_disk(nullptr)
 {
     ui->setupUi(this);
 }
@@ -11,4 +12,9 @@ HexView::HexView(QWidget *parent) :
 HexView::~HexView()
 {
     delete ui;
+}
+
+void HexView::setDisk(Disk *disk)
+{
+    m_disk = disk;
 }

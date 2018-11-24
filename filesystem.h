@@ -66,7 +66,7 @@ public:
     bool openFile(const std::string& fullPath, OpenModes openModes);
     bool closeFile(const std::string& fullPath);
     bool isOpened(const std::string& fullPath);
-    std::list<std::string> getOpenedFileList();
+    std::vector<std::string> getOpenedFiles();
     std::unique_ptr<std::string> readFile(const std::string& fullPath, int length);
     int readFile(const std::string& fullPath, char* buf_out, int length);
     bool writeFile(const std::string& fullPath, char* buf_in, int length);

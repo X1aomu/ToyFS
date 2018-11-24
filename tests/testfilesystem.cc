@@ -1,13 +1,13 @@
-#include "gui/mainwindow.h"
-#include <QApplication>
-
 #include "disk.h"
 #include "filesystem.h"
-#include <iostream>
-#include <cassert>
+
 #include <algorithm>
+#include <cassert>
+#include <iostream>
+
 using namespace std;
-int main(int argc, char *argv[])
+
+int main()
 {
     assert(Disk::CreateDisk("test.disk"));
 
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 
     // create dirs and files
     assert(fs.createDir(d1));
-    assert(fs.createDir(d1) == false); // 不能创建同名目录
+    assert(fs.createDir(d1) == false);                        // 不能创建同名目录
     assert(fs.createFile(f1, FileSystem::ReadOnly) == false); // 不能创建只读文件
     assert(fs.createFile(f1, FileSystem::Directory) == false);
     assert(fs.createFile(f1, FileSystem::File));
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     assert(fs.createFile(f5, FileSystem::File));
     assert(fs.createFile(f6, FileSystem::File));
     assert(fs.createFile("/f1/f7", FileSystem::File) == false); // 父目录不存在(不是目录) 这里巨坑
-    assert(fs.createFile("/d/f7", FileSystem::File) == false); // 父目录不存在
+    assert(fs.createFile("/d/f7", FileSystem::File) == false);  // 父目录不存在
     assert(fs.createFile(f7, FileSystem::File));
     assert(fs.createFile("/d1/f8888", FileSystem::File) == false); // 文件名长度过长
 
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 
     // open and close
     // five files was opened before
-    vector<string> openedFileList = fs.getOpenedFiles();
+    list<string> openedFileList = fs.getOpenedFileList();
     assert(std::find(openedFileList.begin(), openedFileList.end(), f1) != openedFileList.end());
     assert(std::find(openedFileList.begin(), openedFileList.end(), f2) != openedFileList.end());
     assert(std::find(openedFileList.begin(), openedFileList.end(), f3) != openedFileList.end());
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     assert(std::find(openedFileList.begin(), openedFileList.end(), f5) != openedFileList.end());
     assert((std::find(openedFileList.begin(), openedFileList.end(), "/f5") != openedFileList.end()) == false);
     assert((std::find(openedFileList.begin(), openedFileList.end(), f6) != openedFileList.end()) == false);
-    assert(fs.openFile(f6, FileSystem::ReadOnly) == false); // should not be able to open more file
+    assert(fs.openFile(f6, FileSystem::ReadOnly) == false);        // should not be able to open more file
     assert(fs.openFile(f1, FileSystem::Read | FileSystem::Write)); // reopen
     assert(fs.openFile(f5, FileSystem::Read | FileSystem::Write)); // reopen
     assert(fs.closeFile(f1));
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     assert(fs.setFileAttributes(f1, FileSystem::File | FileSystem::ReadOnly));
     assert(fs.setFileAttributes(f2Entry->fullpath(), f2Entry->attributes() | FileSystem::ReadOnly));
     assert(fs.setFileAttributes(f1, FileSystem::Directory) == false);
-    assert(fs.setFileAttributes(f2, 0) == false); // 不能删掉文件属性
+    assert(fs.setFileAttributes(f2, 0) == false);                               // 不能删掉文件属性
     assert(fs.setFileAttributes(f1, FileSystem::Directory | FileSystem::File)); // 目录属性应该被忽略掉
 
     // read and write
@@ -109,22 +109,22 @@ int main(int argc, char *argv[])
         dataout[i] = 'X';
     }
     assert(fs.readFile(f2, datain, 100) == 0);
-    assert(fs.closeFile(f2)); // 文件被打开了，但是没有内容，所以能够正常关闭
+    assert(fs.closeFile(f2));                      // 文件被打开了，但是没有内容，所以能够正常关闭
     assert(fs.writeFile(f2, dataout, 1) == false); // 只读文件，不可写
-    assert(fs.isOpened(f2) == false); // 上个操作失败，文件不应处于打开状态
+    assert(fs.isOpened(f2) == false);              // 上个操作失败，文件不应处于打开状态
 
     assert(fs.writeFile(f3, dataout, 63)); // 写入 63 字节，总大小刚好不超过一个块
     assert(fs.getEntry(f3)->size() == 64);
     assert(fs.readFile(f3, datain, 32) == 32);
     assert(fs.readFile(f3, datain, 32) == 31); // 已读到文件尾
-    assert(fs.readFile(f3, datain, 1) == 0); // 已读到文件尾
-    assert(fs.writeFile(f3, dataout, 1)); // 继续追加数据
+    assert(fs.readFile(f3, datain, 1) == 0);   // 已读到文件尾
+    assert(fs.writeFile(f3, dataout, 1));      // 继续追加数据
     assert(fs.getEntry(f3)->size() == 64 * 2); // 大小应为两个块大小
-    assert(fs.writeFile(f3, dataout, 64)); // 继续追加数据
+    assert(fs.writeFile(f3, dataout, 64));     // 继续追加数据
     assert(fs.getEntry(f3)->size() == 64 * 3); // 大小应为三个块大小
     assert(fs.closeFile(f3));
     assert(fs.readFile(f3, datain, 64 * 2) == 64 * 2); // 关闭文件后重新读取（重置读取指针）
-    assert(fs.readFile(f3, datain, 1) == 0); // 已读到文件尾
+    assert(fs.readFile(f3, datain, 1) == 0);           // 已读到文件尾
     assert(fs.closeFile(f3));
 
     assert(fs.openFile(f2, FileSystem::Read));
@@ -152,17 +152,12 @@ int main(int argc, char *argv[])
     assert(fs.deleteEntry(f3));
     assert(fs.deleteEntry(f4));
     assert(fs.deleteEntry("/f5") == false); // 不存在
-    assert(fs.deleteEntry("f5") == false); // 不存在
+    assert(fs.deleteEntry("f5") == false);  // 不存在
 
     // at last, everything is gone
     assert(fs.rootEntry()->getChildren().empty());
 
-    QApplication app(argc, argv);
-    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("system-file-manager"), app.windowIcon()));
+    cout << "All tests pass!" << endl;
 
-    MainWindow w;
-    w.show();
-
-
-    return app.exec();
+    return 0;
 }

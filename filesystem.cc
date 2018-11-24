@@ -52,8 +52,12 @@ FileSystem::~FileSystem()
 
 bool FileSystem::initFileSystem()
 {
-    bool succeeded;
+    bool success;
     // init fat
+    for (int i = 0; i != kFatSize; ++i)
+    {
+        m_fat[i] = 0;
+    }
     for (int i = 0; i != kNumOfFatBlocks; ++i)
     {
         m_fat[i] = -1;
@@ -61,8 +65,8 @@ bool FileSystem::initFileSystem()
     m_fat[23] = m_fat[49] = -2; // 表示有两个坏块
     m_fat[kRootBlockNumber] = -1; // 根目录块已占用
     // 保存 FAT
-    succeeded = saveFat();
-    if (!succeeded) return false;
+    success = saveFat();
+    if (!success) return false;
 
     std::lock_guard<std::mutex> bufferLock(m_mutex2Buffer);
 
@@ -72,10 +76,12 @@ bool FileSystem::initFileSystem()
         m_buffer[kEntrySize * i] = '$'; // 所有的目录项都为空
     }
     // 写入根目录
-    succeeded = m_disk.write(m_buffer, kRootBlockNumber);
-    if (!succeeded) return false;
+    success = m_disk.write(m_buffer, kRootBlockNumber);
+    if (!success) return false;
 
     if (!sync()) return false; // 更改持久化
+
+    m_openedFiles.clear(); // 清除打开列表
 
     return true;
 }
@@ -268,16 +274,6 @@ bool FileSystem::closeFile(const std::string &fullPath)
     m_openedFiles.erase(iter);
 
     return true;
-}
-
-std::list<std::string> FileSystem::getOpenedFileList()
-{
-    std::list<std::string> ret;
-    for(auto const& e : m_openedFiles)
-    {
-        ret.push_back((e.second)->fullPath);
-    }
-    return ret;
 }
 
 int FileSystem::readFile(const std::string &fullPath, char* buf_out, int length)
@@ -488,6 +484,17 @@ int FileSystem::findNextNBlock(int firstBlock, int n)
 bool FileSystem::isOpened(const std::string &fullPath)
 {
     return m_openedFiles.find(fullPath) != std::end(m_openedFiles);
+}
+
+std::vector<std::string> FileSystem::getOpenedFiles()
+{
+    std::vector<std::string> ret;
+    for(auto const& e : m_openedFiles)
+    {
+        ret.push_back((e.second)->fullPath);
+    }
+    std::sort(ret.begin(), ret.end());
+    return ret;
 }
 
 std::string FileSystem::getNameFromEntryPointer(char *p)
