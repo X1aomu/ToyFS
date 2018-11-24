@@ -44,7 +44,11 @@
       </layout>
      </item>
      <item>
-      <widget class="QTreeView" name="treeViewBrowsingFiles"/>
+      <widget class="QTreeView" name="treeViewBrowsingFiles">
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -76,6 +80,9 @@
          <width>70</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
        </property>
       </widget>
      </item>

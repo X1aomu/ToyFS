@@ -442,6 +442,11 @@ bool FileSystem::deleteEntry(const std::string &fullPath)
     return true;
 }
 
+bool FileSystem::deleteEntry(std::shared_ptr<Entry> entry)
+{
+    return deleteEntry(entry->fullpath());
+}
+
 bool FileSystem::sync()
 {
     return m_disk.sync();

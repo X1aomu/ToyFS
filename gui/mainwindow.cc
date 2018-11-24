@@ -34,9 +34,9 @@ MainWindow::~MainWindow()
     delete m_fs;
 }
 
-void MainWindow::showMessage(const QString &msg)
+void MainWindow::showMessage(const std::string& msg)
 {
-    ui->statusBar->showMessage(msg, 5000);
+    ui->statusBar->showMessage(QString::fromStdString(msg), 5000);
 }
 
 void MainWindow::setViewMode(ViewMode mode)

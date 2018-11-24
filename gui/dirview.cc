@@ -20,6 +20,7 @@ DirView::DirView(QWidget *parent) :
     ui->listViewOpenedFiles->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->treeViewBrowsingFiles->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+    initActionsAndContextMenu();
 //    QTimer *updateOpenedFileListTimer = new QTimer(this);
 //    connect(updateOpenedFileListTimer, &QTimer::timeout, this, &DirView::updateOpenedFileList);
 //    updateOpenedFileListTimer->start(500);
@@ -92,12 +93,37 @@ void DirView::reset()
     updateOpenedFileList();
 }
 
+void DirView::initActionsAndContextMenu()
+{
+    m_fileEntryMenu->addAction(actionDeleteEntry);
+    m_dirEntryMenu->addAction(actionDeleteEntry);
+    m_inDirMenu->addAction(actionAddNewFile);
+    m_inDirMenu->addAction(actionAddNewDir);
+    m_openedFileMenu->addAction(actionRead);
+    m_openedFileMenu->addAction(actionWrite);
+
+    connect(actionDeleteEntry, &QAction::triggered, this, [&](){
+        std::string name = ui->treeViewBrowsingFiles->currentIndex().data().toString().toStdString();
+        auto targetEntry = m_fs->getEntry(m_pwd)->findChild(name);
+        std::string targetPath = targetEntry->fullpath();
+        if (m_fs->deleteEntry(targetEntry))
+        {
+            emit message("Deleted " + targetPath);
+            updateDirectoryView();
+        }
+        else
+        {
+            emit message("Failed to delete " + targetPath);
+        }
+    });
+}
+
 void DirView::on_listViewOpenedFiles_doubleClicked(const QModelIndex &index)
 {
     std::string file = m_openedFileListModel->data(index).toString().toStdString();
     m_fs->closeFile(file);
     updateOpenedFileList();
-    emit message("Closed file: " + QString::fromStdString(file));
+    emit message("Closed file: " + file);
 }
 
 void DirView::on_treeViewBrowsingFiles_doubleClicked(const QModelIndex &index)
@@ -117,11 +143,11 @@ void DirView::on_treeViewBrowsingFiles_doubleClicked(const QModelIndex &index)
         {
             if (!m_fs->openFile(targetPath, FileSystem::Read))
             {
-                emit message("Failed to open file: " + QString::fromStdString(targetPath));
+                emit message("Failed to open file: " +targetPath);
                 return;
             }
         }
-        emit message("Opened file: " + QString::fromStdString(targetPath));
+        emit message("Opened file: " + targetPath);
         updateOpenedFileList();
     }
 }
@@ -131,4 +157,28 @@ void DirView::on_toolButton_up_clicked()
     if (m_fs == nullptr)
         return;
     cd(m_fs->getEntry(m_pwd)->parent()->fullpath());
+}
+
+void DirView::on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint &pos)
+{
+    QModelIndex index = ui->treeViewBrowsingFiles->indexAt(pos);
+    if (!index.isValid()) // 没有选中文件或目录
+    {
+        m_inDirMenu->exec(ui->treeViewBrowsingFiles->viewport()->mapToGlobal(pos));
+    }
+    else
+    {
+        QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
+        std::string name = m_directoryModel->data(mostLeftIndex).toString().toStdString();
+        auto targetEntry = m_fs->getEntry(m_pwd)->findChild(name);
+        std::string targetPath = targetEntry->fullpath();
+        if (targetEntry->isDir())
+        {
+            m_dirEntryMenu->exec(ui->treeViewBrowsingFiles->viewport()->mapToGlobal(pos));
+        }
+        else
+        {
+            m_fileEntryMenu->exec(ui->treeViewBrowsingFiles->viewport()->mapToGlobal(pos));
+        }
+    }
 }

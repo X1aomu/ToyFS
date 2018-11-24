@@ -71,12 +71,9 @@ public:
     int readFile(const std::string& fullPath, char* buf_out, int length);
     bool writeFile(const std::string& fullPath, char* buf_in, int length);
     bool setFileAttributes(const std::string& fullPath, Attributes attributes);
-    /**
-     * @brief deleteEntry
-     * @param fullPath
-     * @return
-     */
+
     bool deleteEntry(const std::string& fullPath);
+    bool deleteEntry(std::shared_ptr<Entry> entry);
 
     //std::shared_ptr<Entry> listEntries(const std::string& fullpath);
 

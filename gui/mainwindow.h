@@ -27,7 +27,7 @@ public:
     ~MainWindow();
 
 public slots:
-    void showMessage(const QString& msg);
+    void showMessage(const std::string& msg);
 
 private slots:
     void setViewMode(ViewMode mode);

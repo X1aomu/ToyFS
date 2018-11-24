@@ -7,6 +7,8 @@
 
 #include <QStringListModel>
 #include <QStandardItemModel>
+#include <QMenu>
+#include <QAction>
 
 namespace Ui {
 class DirView;
@@ -27,14 +29,20 @@ public:
     void reset();
 
 signals:
-    void message(const QString& msg);
+    void message(const std::string& msg);
+
+private:
+    void initActionsAndContextMenu();
 
 private slots:
+//    void treeViewContextMenuHandler(const QPoint& pos);
+//    void listViewContextMenuHandler(const QPoint& pos);
+
     void on_listViewOpenedFiles_doubleClicked(const QModelIndex &index);
-
     void on_treeViewBrowsingFiles_doubleClicked(const QModelIndex &index);
-
     void on_toolButton_up_clicked();
+
+    void on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint &pos);
 
 private:
     Ui::DirView *ui;
@@ -43,6 +51,17 @@ private:
     std::string m_pwd;
     QStringListModel* m_openedFileListModel;
     QStandardItemModel* m_directoryModel;
+
+    QMenu* m_fileEntryMenu = new QMenu(this); // 文件项的菜单
+    QMenu* m_dirEntryMenu = new QMenu(this); // 目录项的菜单
+    QMenu* m_inDirMenu = new QMenu(this); // 在目录空白处点击出现的菜单
+    QMenu* m_openedFileMenu = new QMenu(this); // 打开文件列表项的菜单
+
+    QAction* actionDeleteEntry = new QAction("Delete", this);
+    QAction* actionAddNewFile = new QAction("Add New File", this);
+    QAction* actionAddNewDir = new QAction("Add New Directory", this);
+    QAction* actionRead = new QAction("Read", this);
+    QAction* actionWrite = new QAction("Write", this);
 };
 
 #endif // DIRVIEW_H
