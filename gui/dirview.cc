@@ -105,30 +105,23 @@ void DirView::on_treeViewBrowsingFiles_doubleClicked(const QModelIndex &index)
     // 保证永远获取的是最左边的文件名
     QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
     std::string name = m_directoryModel->data(mostLeftIndex).toString().toStdString();
-    std::string target;
-    if (m_pwd != "/")
+    auto targetEntry = m_fs->getEntry(m_pwd)->findChild(name);
+    std::string targetPath = targetEntry->fullpath();
+    if (targetEntry->isDir())
     {
-        target = m_pwd + "/" + name;
+        cd(targetPath);
     }
     else
     {
-        target = m_pwd + name;
-    }
-    if (m_fs->getEntry(target)->isDir())
-    {
-        cd(target);
-    }
-    else
-    {
-        if (!m_fs->openFile(target, FileSystem::Read | FileSystem::Write))
+        if (!m_fs->openFile(targetPath, FileSystem::Read | FileSystem::Write))
         {
-            if (!m_fs->openFile(target, FileSystem::Read))
+            if (!m_fs->openFile(targetPath, FileSystem::Read))
             {
-                emit message("Failed to open file: " + QString::fromStdString(target));
+                emit message("Failed to open file: " + QString::fromStdString(targetPath));
                 return;
             }
         }
-        emit message("Opened file: " + QString::fromStdString(target));
+        emit message("Opened file: " + QString::fromStdString(targetPath));
         updateOpenedFileList();
     }
 }
