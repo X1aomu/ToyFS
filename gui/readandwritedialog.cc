@@ -1,11 +1,8 @@
 #include "readandwritedialog.h"
 #include "ui_readandwritedialog.h"
 
-ReadAndWriteDialog::ReadAndWriteDialog(FileSystem *fs, const std::string &filePath, QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::ReadAndWriteDialog),
-    m_fs(fs),
-    m_filePath(filePath)
+ReadAndWriteDialog::ReadAndWriteDialog(FileSystem* fs, const std::string& filePath, QWidget* parent) :
+    QDialog(parent), ui(new Ui::ReadAndWriteDialog), m_fs(fs), m_filePath(filePath)
 {
     ui->setupUi(this);
     setModal(true);

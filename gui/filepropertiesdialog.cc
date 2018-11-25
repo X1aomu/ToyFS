@@ -1,11 +1,8 @@
 #include "filepropertiesdialog.h"
 #include "ui_filepropertiesdialog.h"
 
-FilePropertiesDialog::FilePropertiesDialog(FileSystem *fs, const std::string &filePath, QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::FilePropertiesDialog),
-    m_fs(fs),
-    m_filePath(filePath)
+FilePropertiesDialog::FilePropertiesDialog(FileSystem* fs, const std::string& filePath, QWidget* parent) :
+    QDialog(parent), ui(new Ui::FilePropertiesDialog), m_fs(fs), m_filePath(filePath)
 {
     ui->setupUi(this);
     setWindowTitle("File Properties");

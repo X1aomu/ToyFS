@@ -1,19 +1,16 @@
 #include "dirview.h"
 #include "ui_dirview.h"
 
-#include <QtDebug>
+#include <QInputDialog>
 #include <QStringListModel>
 #include <QTimer>
-#include <QInputDialog>
+#include <QtDebug>
 
 #include "gui/filepropertiesdialog.h"
 #include "gui/readandwritedialog.h"
 
-DirView::DirView(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::DirView),
-    m_fs(nullptr),
-    m_openedFileListModel(new QStringListModel(this)),
+DirView::DirView(QWidget* parent) :
+    QWidget(parent), ui(new Ui::DirView), m_fs(nullptr), m_openedFileListModel(new QStringListModel(this)),
     m_directoryModel(new QStandardItemModel(this))
 {
     ui->setupUi(this);
@@ -33,7 +30,7 @@ DirView::~DirView()
     delete ui;
 }
 
-void DirView::setFileSystem(FileSystem *fs)
+void DirView::setFileSystem(FileSystem* fs)
 {
     m_fs = fs;
 }
@@ -43,7 +40,7 @@ void DirView::updateOpenedFileList()
     QStringList list;
     if (m_fs != nullptr)
     {
-        for(auto const& str : m_fs->getOpenedFiles())
+        for (auto const& str : m_fs->getOpenedFiles())
         {
             list.append(QString::fromStdString(str));
         }
@@ -51,13 +48,11 @@ void DirView::updateOpenedFileList()
     m_openedFileListModel->setStringList(list);
 }
 
-void DirView::cd(const std::string &dir)
+void DirView::cd(const std::string& dir)
 {
-    if (m_fs == nullptr)
-        return;
+    if (m_fs == nullptr) return;
     auto entry = m_fs->getEntry(dir);
-    if (!entry->isDir())
-        return;
+    if (!entry->isDir()) return;
     m_pwd = dir;
     ui->label_dirPath->setText(QString::fromStdString(m_pwd));
     updateDirectoryView();
@@ -66,19 +61,21 @@ void DirView::cd(const std::string &dir)
 void DirView::updateDirectoryView()
 {
     m_directoryModel->clear();
-    m_directoryModel->setHorizontalHeaderLabels(QStringList() << "Name" << "Size" << "Read Only" << "System");
+    m_directoryModel->setHorizontalHeaderLabels(QStringList() << "Name"
+                                                              << "Size"
+                                                              << "Read Only"
+                                                              << "System");
     ui->treeViewBrowsingFiles->setColumnWidth(0, 250);
-    if (m_fs == nullptr)
-        return;
+    if (m_fs == nullptr) return;
     auto children = m_fs->getEntry(m_pwd)->getChildren();
     QStandardItem* rootItem = m_directoryModel->invisibleRootItem();
-    for(const auto& child : children)
+    for (const auto& child : children)
     {
         QString name = QString::fromStdString(child->name());
         QString size = QString::number(child->size());
         QString readOnly = child->isReadOnly() ? "Yes" : "No";
         QString system = child->isSystem() ? "Yes" : "No";
-        QList<QStandardItem *> rowItems;
+        QList<QStandardItem*> rowItems;
         rowItems << new QStandardItem(name);
         rowItems << new QStandardItem(size);
         rowItems << new QStandardItem(readOnly);
@@ -122,7 +119,7 @@ void DirView::initActionsAndContextMenu()
     m_openedFileMenu->addSeparator();
     m_openedFileMenu->addAction(actionClose);
 
-    connect(actionOpenFile, &QAction::triggered, this, [&](){
+    connect(actionOpenFile, &QAction::triggered, this, [&]() {
         if (m_fs == nullptr) return;
         QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
         // 保证永远获取的是最左边的文件名
@@ -140,7 +137,7 @@ void DirView::initActionsAndContextMenu()
             {
                 if (!m_fs->openFile(targetPath, FileSystem::Read))
                 {
-                    emit message("Failed to open file: " +targetPath);
+                    emit message("Failed to open file: " + targetPath);
                     return;
                 }
             }
@@ -149,7 +146,7 @@ void DirView::initActionsAndContextMenu()
         }
     });
 
-    connect(actionFileProperties, &QAction::triggered, this, [&](){
+    connect(actionFileProperties, &QAction::triggered, this, [&]() {
         if (m_fs == nullptr) return;
         QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
         // 保证永远获取的是最左边的文件名
@@ -161,7 +158,7 @@ void DirView::initActionsAndContextMenu()
         connect(dialog, &QDialog::finished, this, &DirView::updateDirectoryView); // 读写操作后更新界面
     });
 
-    connect(actionDeleteEntry, &QAction::triggered, this, [&](){
+    connect(actionDeleteEntry, &QAction::triggered, this, [&]() {
         if (m_fs == nullptr) return;
         QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
         // 保证永远获取的是最左边的文件名
@@ -180,7 +177,7 @@ void DirView::initActionsAndContextMenu()
         }
     });
 
-    connect(actionAddNewFile, &QAction::triggered, this, [&](){
+    connect(actionAddNewFile, &QAction::triggered, this, [&]() {
         if (m_fs == nullptr) return;
         QString fileName = QInputDialog::getText(this, "Input File Name", "File Name:");
         if (m_fs->createFile(m_fs->getEntry(m_pwd), fileName.toStdString(), FileSystem::File))
@@ -195,7 +192,7 @@ void DirView::initActionsAndContextMenu()
         }
     });
 
-    connect(actionAddNewDir, &QAction::triggered, this, [&](){
+    connect(actionAddNewDir, &QAction::triggered, this, [&]() {
         if (m_fs == nullptr) return;
         QString dirName = QInputDialog::getText(this, "Input Directory Name", "Directory Name:");
         if (m_fs->createDir(m_fs->getEntry(m_pwd), dirName.toStdString()))
@@ -209,7 +206,7 @@ void DirView::initActionsAndContextMenu()
         }
     });
 
-    connect(actionReadOrWrite, &QAction::triggered, this, [&](){
+    connect(actionReadOrWrite, &QAction::triggered, this, [&]() {
         if (m_fs == nullptr) return;
         std::string filePath = ui->listViewOpenedFiles->currentIndex().data().toString().toStdString();
         ReadAndWriteDialog* dialog = new ReadAndWriteDialog(m_fs, filePath);
@@ -217,7 +214,7 @@ void DirView::initActionsAndContextMenu()
         connect(dialog, &QDialog::finished, this, &DirView::updateDirectoryView); // 读写操作后更新界面
     });
 
-    connect(actionClose, &QAction::triggered, this, [&](){
+    connect(actionClose, &QAction::triggered, this, [&]() {
         if (m_fs == nullptr) return;
         std::string filePath = ui->listViewOpenedFiles->currentIndex().data().toString().toStdString();
         m_fs->closeFile(filePath);
@@ -226,13 +223,13 @@ void DirView::initActionsAndContextMenu()
     });
 }
 
-void DirView::on_listViewOpenedFiles_doubleClicked(const QModelIndex &index)
+void DirView::on_listViewOpenedFiles_doubleClicked(const QModelIndex& index)
 {
     Q_UNUSED(index);
     actionReadOrWrite->trigger();
 }
 
-void DirView::on_treeViewBrowsingFiles_doubleClicked(const QModelIndex &index)
+void DirView::on_treeViewBrowsingFiles_doubleClicked(const QModelIndex& index)
 {
     Q_UNUSED(index);
     actionOpenFile->trigger();
@@ -240,12 +237,11 @@ void DirView::on_treeViewBrowsingFiles_doubleClicked(const QModelIndex &index)
 
 void DirView::on_toolButton_up_clicked()
 {
-    if (m_fs == nullptr)
-        return;
+    if (m_fs == nullptr) return;
     cd(m_fs->getEntry(m_pwd)->parent()->fullpath());
 }
 
-void DirView::on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint &pos)
+void DirView::on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint& pos)
 {
     if (m_fs == nullptr) return;
     QModelIndex index = ui->treeViewBrowsingFiles->indexAt(pos);
@@ -270,7 +266,7 @@ void DirView::on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint &
     }
 }
 
-void DirView::on_listViewOpenedFiles_customContextMenuRequested(const QPoint &pos)
+void DirView::on_listViewOpenedFiles_customContextMenuRequested(const QPoint& pos)
 {
     QModelIndex index = ui->listViewOpenedFiles->indexAt(pos);
     if (!index.isValid()) // 没有选中文件或目录

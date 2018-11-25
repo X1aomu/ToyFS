@@ -13,28 +13,29 @@
 
 #include "disk.h"
 
-#include <string>
-#include <vector>
-#include <memory>
 #include <list>
+#include <memory>
 #include <mutex>
-#include <unordered_map>
+#include <string>
 #include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 class Entry;
 
 class FileSystem
 {
 public:
-    static const int kBlockSize = 64; // 块大小，本程序为了简便等于磁盘扇区大小
-    static const int kEntrySize = 8; // 目录项大小
+    static const int kBlockSize = 64;      // 块大小，本程序为了简便等于磁盘扇区大小
+    static const int kEntrySize = 8;       // 目录项大小
     static const int kMaxChildEntries = 8; // 一个目录最大的目录项数
     static const int kMaxOpenedFiles = 5;
     static const int kRawFileNameLength = 5;
     static const int END_OF_FILE = '#';
-    static_assert (kEntrySize * kMaxChildEntries == kBlockSize, "Mismatch constants.");
+    static_assert(kEntrySize * kMaxChildEntries == kBlockSize, "Mismatch constants.");
 
-    enum Attribute {
+    enum Attribute
+    {
         ReadOnly = 1,
         System = 2,
         File = 4,
@@ -42,7 +43,8 @@ public:
     };
     using Attributes = int;
 
-    enum OpenMode {
+    enum OpenMode
+    {
         Read = 1,
         Write = 2
     };
@@ -81,7 +83,8 @@ public:
 
 private:
     // 文件描述符
-    struct OpenedFile {
+    struct OpenedFile
+    {
         std::string fullPath;
         Attributes attributes;
         int blockNumber;
@@ -95,8 +98,8 @@ private:
     static const int kEntryBlockStartIndex = 6;
     static const int kEntryNumOfBlocksIndex = 7;
 
-    const int kFatSize; // FAT 大小
-    const int kNumOfFatBlocks; // FAT 占用的块数
+    const int kFatSize;         // FAT 大小
+    const int kNumOfFatBlocks;  // FAT 占用的块数
     const int kRootBlockNumber; // 根目录起始块地址
 
     Disk& m_disk;
@@ -140,7 +143,7 @@ class Entry : public std::enable_shared_from_this<Entry>
 public:
     Entry(Disk& disk) : m_disk(disk) {}
 
-    //bool isPathValid();
+    // bool isPathValid();
     bool isDir() { return m_attributes & FileSystem::Directory; }
     bool isReadOnly() { return m_attributes & FileSystem::ReadOnly; }
     bool isSystem() { return m_attributes & FileSystem::System; }
@@ -163,7 +166,7 @@ public:
      * @return 如果子项存在，返回子项，否则返回 null。
      */
     std::shared_ptr<Entry> findChild(const std::string& name);
-//    std::weak_ptr<Entry> addChild(const std::string& name);
+    //    std::weak_ptr<Entry> addChild(const std::string& name);
 
 private:
     Disk& m_disk;

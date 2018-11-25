@@ -7,7 +7,8 @@
 
 #include <QMainWindow>
 
-namespace Ui {
+namespace Ui
+{
 class MainWindow;
 }
 
@@ -21,7 +22,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
 public slots:
@@ -43,13 +44,12 @@ private slots:
     void on_actionInitializie_File_System_triggered();
 
 private:
-    Ui::MainWindow *ui;
-    DirView *m_dirView;
+    Ui::MainWindow* ui;
+    DirView* m_dirView;
     QString m_baseWindowTitle = "Toy File System Demo";
 
     Disk* m_disk;
     FileSystem* m_fs;
-
 };
 
 #endif // TOYFS_GUI_MAINWINDOW_H_

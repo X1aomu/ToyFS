@@ -1,9 +1,9 @@
 #ifndef TOYFS_FAKEDISK_H_
 #define TOYFS_FAKEDISK_H_
 
-#include <string>
 #include <fstream>
 #include <mutex>
+#include <string>
 
 class Disk
 {

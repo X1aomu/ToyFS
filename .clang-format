@@ -1,0 +1,17 @@
+---
+Language:        Cpp
+BasedOnStyle:    LLVM
+ColumnLimit:     120	
+IndentWidth:     4
+ContinuationIndentWidth: 8
+AccessModifierOffset: -4
+BreakBeforeBraces: Allman
+DerivePointerAlignment: false
+PointerAlignment: Left
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: false
+BreakConstructorInitializers: AfterColon
+...

@@ -5,7 +5,8 @@
 
 #include <QDialog>
 
-namespace Ui {
+namespace Ui
+{
 class FilePropertiesDialog;
 }
 
@@ -14,7 +15,7 @@ class FilePropertiesDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit FilePropertiesDialog(FileSystem* fs, const std::string& filePath, QWidget *parent = nullptr);
+    explicit FilePropertiesDialog(FileSystem* fs, const std::string& filePath, QWidget* parent = nullptr);
     ~FilePropertiesDialog();
 
 private slots:
@@ -22,7 +23,7 @@ private slots:
     void on_pushButton_cancel_clicked();
 
 private:
-    Ui::FilePropertiesDialog *ui;
+    Ui::FilePropertiesDialog* ui;
 
     FileSystem* m_fs;
     std::string m_filePath;

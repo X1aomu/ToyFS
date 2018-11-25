@@ -5,7 +5,7 @@
 #include <limits>
 #include <mutex>
 
-bool Disk::CreateDisk(const std::__cxx11::string &filePath)
+bool Disk::CreateDisk(const std::__cxx11::string& filePath)
 {
     std::ofstream newFile(filePath);
     for (int i = 0; i != kNumOfSector * kSectorSize; ++i)
@@ -16,7 +16,7 @@ bool Disk::CreateDisk(const std::__cxx11::string &filePath)
     return newFile.good();
 }
 
-Disk::Disk(const std::string &diskFile)
+Disk::Disk(const std::string& diskFile)
 {
     m_ioFile.open(diskFile, std::ios::in | std::ios::out | std::ios::binary);
 }
@@ -59,7 +59,7 @@ bool Disk::read(char* buf, int sector)
     return m_ioFile.gcount() == kSectorSize;
 }
 
-bool Disk::write(char *buf, int sector)
+bool Disk::write(char* buf, int sector)
 {
     std::lock_guard<std::mutex> lock(m_mutex2Write);
 

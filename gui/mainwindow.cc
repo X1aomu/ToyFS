@@ -2,20 +2,16 @@
 #include "ui_mainwindow.h"
 
 #include <QFileDialog>
-#include <QtDebug>
 #include <QMessageBox>
+#include <QtDebug>
 
 #include "disk.h"
 #include "filesystem.h"
 
 #include "gui/dirview.h"
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow),
-    m_dirView(new DirView),
-    m_disk(nullptr),
-    m_fs(nullptr)
+MainWindow::MainWindow(QWidget* parent) :
+    QMainWindow(parent), ui(new Ui::MainWindow), m_dirView(new DirView), m_disk(nullptr), m_fs(nullptr)
 {
     ui->setupUi(this);
 
@@ -111,16 +107,14 @@ void MainWindow::on_actionCreate_File_System_triggered()
     {
         return;
     }
-    if (m_fs == nullptr)
-        return;
+    if (m_fs == nullptr) return;
     m_fs->initFileSystem();
     m_dirView->cd(m_fs->rootEntry()->fullpath());
 }
 
 void MainWindow::on_actionInitializie_File_System_triggered()
 {
-    if (m_fs == nullptr)
-        return;
+    if (m_fs == nullptr) return;
     using std::string;
     string d1 = "/d1";
     string d2 = "/d2";
