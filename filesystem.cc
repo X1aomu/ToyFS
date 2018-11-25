@@ -46,6 +46,12 @@ FileSystem::FileSystem(Disk &disk)
 
 FileSystem::~FileSystem()
 {
+    // 关闭所有文件
+    for (auto const& e : m_openedFiles)
+    {
+        closeFile(e.first);
+    }
+    sync();
     delete[] m_fat;
     delete[] m_buffer;
 }
@@ -166,6 +172,14 @@ bool FileSystem::createDir(const std::string &fullPath)
     // todo 适应可变 sector size
 }
 
+bool FileSystem::createDir(std::shared_ptr<Entry> parent, const std::string &dirName)
+{
+    if (!checkName(dirName)) return false; // 先检查一次名称，不然当parent是根目录且文件名是空的时候下面就会出错
+    std::string fullPath = parent->fullpath() + "/" + dirName;
+    fullPath = fullPath.substr(fullPath.find_first_not_of('/') - 1);
+    return createDir(fullPath);
+}
+
 bool FileSystem::createFile(const std::string &fullPath, FileSystem::Attributes attributes)
 {
     if (exist(fullPath)) return false; // 目标已存在
@@ -224,6 +238,14 @@ bool FileSystem::createFile(const std::string &fullPath, FileSystem::Attributes 
 
     return true;
     // todo 适应可变 sector size
+}
+
+bool FileSystem::createFile(std::shared_ptr<Entry> parent, const std::string &fileName, Attributes attributes)
+{
+    if (!checkName(fileName)) return false; // 先检查一次名称，不然当parent是根目录且文件名是空的时候下面就会出错
+    std::string fullPath = parent->fullpath() + "/" + fileName;
+    fullPath = fullPath.substr(fullPath.find_first_not_of('/') - 1);
+    return createFile(fullPath, attributes);
 }
 
 bool FileSystem::openFile(const std::string &fullPath, FileSystem::OpenModes openModes)
@@ -314,7 +336,7 @@ int FileSystem::readFile(const std::string &fullPath, char* buf_out, int length)
     return wp;
 }
 
-bool FileSystem::writeFile(const std::string &fullPath, char *buffer, int length)
+bool FileSystem::writeFile(const std::string &fullPath, const char *buffer, int length)
 {
     if (!isOpened(fullPath)) // 文件没有打开
     {

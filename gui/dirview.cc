@@ -4,6 +4,10 @@
 #include <QtDebug>
 #include <QStringListModel>
 #include <QTimer>
+#include <QInputDialog>
+
+#include "gui/filepropertiesdialog.h"
+#include "gui/readandwritedialog.h"
 
 DirView::DirView(QWidget *parent) :
     QWidget(parent),
@@ -95,61 +99,127 @@ void DirView::reset()
 
 void DirView::initActionsAndContextMenu()
 {
+    m_fileEntryMenu->addAction(actionOpenFile);
+    m_fileEntryMenu->addSeparator();
+    m_fileEntryMenu->addAction(actionFileProperties);
+    m_fileEntryMenu->addSeparator();
     m_fileEntryMenu->addAction(actionDeleteEntry);
+
     m_dirEntryMenu->addAction(actionDeleteEntry);
+
     m_inDirMenu->addAction(actionAddNewFile);
     m_inDirMenu->addAction(actionAddNewDir);
-    m_openedFileMenu->addAction(actionRead);
-    m_openedFileMenu->addAction(actionWrite);
+
+    m_openedFileMenu->addAction(actionReadOrWrite);
+    m_openedFileMenu->addSeparator();
+    m_openedFileMenu->addAction(actionClose);
+
+    connect(actionOpenFile, &QAction::triggered, this, [&](){
+        QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
+        // 保证永远获取的是最左边的文件名
+        QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
+        std::string name = mostLeftIndex.data().toString().toStdString();
+        auto targetEntry = m_fs->getEntry(m_pwd)->findChild(name);
+        std::string targetPath = targetEntry->fullpath();
+        if (targetEntry->isDir())
+        {
+            cd(targetPath);
+        }
+        else
+        {
+            if (!m_fs->openFile(targetPath, FileSystem::Read | FileSystem::Write))
+            {
+                if (!m_fs->openFile(targetPath, FileSystem::Read))
+                {
+                    emit message("Failed to open file: " +targetPath);
+                    return;
+                }
+            }
+            emit message("Opened file: " + targetPath);
+            updateOpenedFileList(); // 更新界面
+        }
+    });
+
+    connect(actionFileProperties, &QAction::triggered, this, [&](){
+        QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
+        // 保证永远获取的是最左边的文件名
+        QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
+        std::string name = mostLeftIndex.data().toString().toStdString();
+        std::string filePath = m_fs->getEntry(m_pwd)->findChild(name)->fullpath();
+        FilePropertiesDialog* dialog = new FilePropertiesDialog(m_fs, filePath);
+        dialog->show();
+        connect(dialog, &QDialog::finished, this, &DirView::updateDirectoryView); // 读写操作后更新界面
+    });
 
     connect(actionDeleteEntry, &QAction::triggered, this, [&](){
-        std::string name = ui->treeViewBrowsingFiles->currentIndex().data().toString().toStdString();
+        QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
+        // 保证永远获取的是最左边的文件名
+        QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
+        std::string name = mostLeftIndex.data().toString().toStdString();
         auto targetEntry = m_fs->getEntry(m_pwd)->findChild(name);
         std::string targetPath = targetEntry->fullpath();
         if (m_fs->deleteEntry(targetEntry))
         {
             emit message("Deleted " + targetPath);
-            updateDirectoryView();
+            updateDirectoryView(); // 更新界面
         }
         else
         {
             emit message("Failed to delete " + targetPath);
         }
     });
+
+    connect(actionAddNewFile, &QAction::triggered, this, [&](){
+        QString fileName = QInputDialog::getText(this, "Input File Name", "File Name:");
+        if (m_fs->createFile(m_fs->getEntry(m_pwd), fileName.toStdString(), FileSystem::File))
+        {
+            emit message("Created file " + fileName.toStdString());
+            updateDirectoryView(); // 更新界面
+        }
+        else
+        {
+            emit message("Failed to create file " + fileName.toStdString());
+        }
+    });
+
+    connect(actionAddNewDir, &QAction::triggered, this, [&](){
+        QString dirName = QInputDialog::getText(this, "Input Directory Name", "Directory Name:");
+        if (m_fs->createDir(m_fs->getEntry(m_pwd), dirName.toStdString()))
+        {
+            emit message("Created directory " + dirName.toStdString());
+            updateDirectoryView(); // 更新界面
+        }
+        else
+        {
+            emit message("Failed to create directory " + dirName.toStdString());
+        }
+    });
+
+    connect(actionReadOrWrite, &QAction::triggered, this, [&](){
+        std::string filePath = ui->listViewOpenedFiles->currentIndex().data().toString().toStdString();
+        ReadAndWriteDialog* dialog = new ReadAndWriteDialog(m_fs, filePath);
+        dialog->show();
+        connect(dialog, &QDialog::finished, this, &DirView::updateDirectoryView); // 读写操作后更新界面
+    });
+
+    connect(actionClose, &QAction::triggered, this, [&](){
+        std::string filePath = ui->listViewOpenedFiles->currentIndex().data().toString().toStdString();
+        m_fs->closeFile(filePath);
+        updateOpenedFileList();
+        emit message("Closed file: " + filePath);
+    });
 }
 
 void DirView::on_listViewOpenedFiles_doubleClicked(const QModelIndex &index)
 {
-    std::string file = m_openedFileListModel->data(index).toString().toStdString();
-    m_fs->closeFile(file);
-    updateOpenedFileList();
-    emit message("Closed file: " + file);
+    Q_UNUSED(index);
+    actionReadOrWrite->trigger();
 }
 
 void DirView::on_treeViewBrowsingFiles_doubleClicked(const QModelIndex &index)
 {
-    // 保证永远获取的是最左边的文件名
-    QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
-    std::string name = m_directoryModel->data(mostLeftIndex).toString().toStdString();
-    auto targetEntry = m_fs->getEntry(m_pwd)->findChild(name);
-    std::string targetPath = targetEntry->fullpath();
-    if (targetEntry->isDir())
-    {
-        cd(targetPath);
-    }
-    else
-    {
-        if (!m_fs->openFile(targetPath, FileSystem::Read | FileSystem::Write))
-        {
-            if (!m_fs->openFile(targetPath, FileSystem::Read))
-            {
-                emit message("Failed to open file: " +targetPath);
-                return;
-            }
-        }
-        emit message("Opened file: " + targetPath);
-        updateOpenedFileList();
-    }
+    Q_UNUSED(index);
+    actionOpenFile->trigger();
 }
 
 void DirView::on_toolButton_up_clicked()
@@ -181,4 +251,14 @@ void DirView::on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint &
             m_fileEntryMenu->exec(ui->treeViewBrowsingFiles->viewport()->mapToGlobal(pos));
         }
     }
+}
+
+void DirView::on_listViewOpenedFiles_customContextMenuRequested(const QPoint &pos)
+{
+    QModelIndex index = ui->listViewOpenedFiles->indexAt(pos);
+    if (!index.isValid()) // 没有选中文件或目录
+    {
+        return;
+    }
+    m_openedFileMenu->exec(ui->listViewOpenedFiles->viewport()->mapToGlobal(pos));
 }

@@ -44,6 +44,8 @@ private slots:
 
     void on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint &pos);
 
+    void on_listViewOpenedFiles_customContextMenuRequested(const QPoint &pos);
+
 private:
     Ui::DirView *ui;
 
@@ -57,11 +59,13 @@ private:
     QMenu* m_inDirMenu = new QMenu(this); // 在目录空白处点击出现的菜单
     QMenu* m_openedFileMenu = new QMenu(this); // 打开文件列表项的菜单
 
+    QAction* actionOpenFile = new QAction("Open", this);
+    QAction* actionFileProperties = new QAction("Properties", this);
     QAction* actionDeleteEntry = new QAction("Delete", this);
     QAction* actionAddNewFile = new QAction("Add New File", this);
     QAction* actionAddNewDir = new QAction("Add New Directory", this);
-    QAction* actionRead = new QAction("Read", this);
-    QAction* actionWrite = new QAction("Write", this);
+    QAction* actionReadOrWrite = new QAction("Read or Write", this);
+    QAction* actionClose = new QAction("Close", this);
 };
 
 #endif // DIRVIEW_H

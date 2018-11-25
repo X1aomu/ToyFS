@@ -62,14 +62,16 @@ public:
     bool exist(const std::string& fullPath);
 
     bool createDir(const std::string& fullPath);
+    bool createDir(std::shared_ptr<Entry> parent, const std::string& dirName);
     bool createFile(const std::string& fullPath, Attributes attributes);
+    bool createFile(std::shared_ptr<Entry> parent, const std::string& fileName, Attributes attributes);
     bool openFile(const std::string& fullPath, OpenModes openModes);
     bool closeFile(const std::string& fullPath);
     bool isOpened(const std::string& fullPath);
     std::vector<std::string> getOpenedFiles();
     std::unique_ptr<std::string> readFile(const std::string& fullPath, int length);
     int readFile(const std::string& fullPath, char* buf_out, int length);
-    bool writeFile(const std::string& fullPath, char* buf_in, int length);
+    bool writeFile(const std::string& fullPath, const char* buf_in, int length);
     bool setFileAttributes(const std::string& fullPath, Attributes attributes);
 
     bool deleteEntry(const std::string& fullPath);

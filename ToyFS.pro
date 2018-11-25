@@ -30,19 +30,25 @@ SOURCES += \
     gui/dirview.cc \
     gui/hexview.cc \
     disk.cc \
-    filesystem.cc
+    filesystem.cc \
+    gui/readandwritedialog.cc \
+    gui/filepropertiesdialog.cc
 
 HEADERS += \
     gui/mainwindow.h \
     gui/dirview.h \
     gui/hexview.h \
     filesystem.h \
-    disk.h
+    disk.h \
+    gui/readandwritedialog.h \
+    gui/filepropertiesdialog.h
 
 FORMS += \
     gui/mainwindow.ui \
     gui/dirview.ui \
-    gui/hexview.ui
+    gui/hexview.ui \
+    gui/readandwritedialog.ui \
+    gui/filepropertiesdialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
