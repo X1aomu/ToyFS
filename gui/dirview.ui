@@ -32,7 +32,7 @@
         <widget class="QLabel" name="label_dirPath">
          <property name="font">
           <font>
-           <family>DejaVu Sans</family>
+           <family>DejaVu Sans Mono</family>
            <pointsize>12</pointsize>
           </font>
          </property>
@@ -45,6 +45,14 @@
      </item>
      <item>
       <widget class="QTreeView" name="treeViewBrowsingFiles">
+       <property name="font">
+        <font>
+         <family>微软雅黑</family>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
+        </font>
+       </property>
        <property name="contextMenuPolicy">
         <enum>Qt::CustomContextMenu</enum>
        </property>
@@ -58,8 +66,10 @@
       <widget class="QLabel" name="label">
        <property name="font">
         <font>
-         <family>DejaVu Sans</family>
+         <family>微软雅黑</family>
          <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -80,6 +90,12 @@
          <width>70</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>微软雅黑</family>
+         <pointsize>12</pointsize>
+        </font>
        </property>
        <property name="contextMenuPolicy">
         <enum>Qt::CustomContextMenu</enum>

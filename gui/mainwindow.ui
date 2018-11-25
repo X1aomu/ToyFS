@@ -36,13 +36,6 @@
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>&amp;View</string>
-    </property>
-    <addaction name="actionBrowsing_Mode"/>
-    <addaction name="actionHex_Mode"/>
-   </widget>
    <widget class="QMenu" name="menuFile_System">
     <property name="title">
      <string>File Syste&amp;m</string>
@@ -52,9 +45,15 @@
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuFile_System"/>
-   <addaction name="menuView"/>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="font">
+    <font>
+     <family>微软雅黑</family>
+     <pointsize>11</pointsize>
+    </font>
+   </property>
+  </widget>
   <action name="actionOpen_Disk">
    <property name="text">
     <string>&amp;Open Disk</string>

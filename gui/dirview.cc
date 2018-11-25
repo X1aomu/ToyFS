@@ -86,6 +86,16 @@ void DirView::updateDirectoryView()
         rowItems << new QStandardItem(readOnly);
         rowItems << new QStandardItem(system);
         rootItem->appendRow(rowItems);
+        QIcon icon;
+        if (child->isDir())
+        {
+            icon.addPixmap(style()->standardPixmap(QStyle::SP_DirIcon));
+        }
+        else
+        {
+            icon.addPixmap(style()->standardPixmap(QStyle::SP_FileIcon));
+        }
+        rowItems.first()->setIcon(icon);
     }
 }
 

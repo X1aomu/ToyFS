@@ -1,5 +1,6 @@
 #include "gui/mainwindow.h"
 #include <QApplication>
+#include <QStyle>
 
 #include "disk.h"
 #include "filesystem.h"
@@ -158,11 +159,12 @@ int main(int argc, char *argv[])
     assert(fs.rootEntry()->getChildren().empty());
 
     QApplication app(argc, argv);
-    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("system-file-manager"), app.windowIcon()));
+    QIcon appIcon;
+    appIcon.addPixmap(app.style()->standardPixmap(QStyle::SP_DirOpenIcon));
+    app.setWindowIcon(appIcon);
 
     MainWindow w;
     w.show();
-
 
     return app.exec();
 }

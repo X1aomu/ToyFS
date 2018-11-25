@@ -7,7 +7,6 @@
 #include "filesystem.h"
 
 #include "gui/dirview.h"
-#include "gui/hexview.h"
 
 namespace Ui {
 class MainWindow;
@@ -30,8 +29,6 @@ public slots:
     void showMessage(const std::string& msg);
 
 private slots:
-    void setViewMode(ViewMode mode);
-
     void openFile(const QString& filePath);
     void closeFile();
     void saveFile();
@@ -49,7 +46,6 @@ private slots:
 private:
     Ui::MainWindow *ui;
     DirView *m_dirView;
-    HexView *m_hexView;
     QString m_baseWindowTitle = "Toy File System Demo";
 
     Disk* m_disk;

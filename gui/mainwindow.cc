@@ -3,28 +3,26 @@
 
 #include <QFileDialog>
 #include <QtDebug>
+#include <QMessageBox>
 
 #include "disk.h"
 #include "filesystem.h"
 
 #include "gui/dirview.h"
-#include "gui/hexview.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     m_dirView(new DirView),
-    m_hexView(new HexView),
     m_disk(nullptr),
     m_fs(nullptr)
 {
     ui->setupUi(this);
 
     setWindowTitle(m_baseWindowTitle);
+    setCentralWidget(m_dirView);
 
     connect(m_dirView, &DirView::message, this, &MainWindow::showMessage);
-
-    emit setViewMode(ViewMode::BROWSE_MODE);
 }
 
 MainWindow::~MainWindow()
@@ -37,18 +35,6 @@ MainWindow::~MainWindow()
 void MainWindow::showMessage(const std::string& msg)
 {
     ui->statusBar->showMessage(QString::fromStdString(msg), 5000);
-}
-
-void MainWindow::setViewMode(ViewMode mode)
-{
-    switch (mode) {
-    case BROWSE_MODE:
-        setCentralWidget(m_dirView);
-        break;
-    case HEX_MODE:
-        setCentralWidget(m_hexView);
-        break;
-    }
 }
 
 void MainWindow::openFile(const QString& filePath)
@@ -88,7 +74,6 @@ void MainWindow::saveFile()
 void MainWindow::updateViews()
 {
     m_dirView->setFileSystem(m_fs);
-    m_hexView->setDisk(m_disk);
 }
 
 void MainWindow::on_actionNew_Disk_triggered()
@@ -121,6 +106,11 @@ void MainWindow::on_actionClose_Disk_triggered()
 
 void MainWindow::on_actionCreate_File_System_triggered()
 {
+    if (QMessageBox::No == QMessageBox::question(this, "Create New File System on Disk",
+                                                 "Are you sure? This will erase all data on current disk."))
+    {
+        return;
+    }
     if (m_fs == nullptr)
         return;
     m_fs->initFileSystem();

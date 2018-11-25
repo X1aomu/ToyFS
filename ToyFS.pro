@@ -28,7 +28,6 @@ SOURCES += \
         main.cc \
     gui/mainwindow.cc \
     gui/dirview.cc \
-    gui/hexview.cc \
     disk.cc \
     filesystem.cc \
     gui/readandwritedialog.cc \
@@ -37,7 +36,6 @@ SOURCES += \
 HEADERS += \
     gui/mainwindow.h \
     gui/dirview.h \
-    gui/hexview.h \
     filesystem.h \
     disk.h \
     gui/readandwritedialog.h \
@@ -46,7 +44,6 @@ HEADERS += \
 FORMS += \
     gui/mainwindow.ui \
     gui/dirview.ui \
-    gui/hexview.ui \
     gui/readandwritedialog.ui \
     gui/filepropertiesdialog.ui
 
