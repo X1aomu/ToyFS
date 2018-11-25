@@ -1,5 +1,5 @@
-#ifndef READANDWRITEDIALOG_H
-#define READANDWRITEDIALOG_H
+#ifndef TOYFS_GUI_READANDWRITEDIALOG_H_
+#define TOYFS_GUI_READANDWRITEDIALOG_H_
 
 #include "filesystem.h"
 
@@ -19,9 +19,7 @@ public:
 
 private slots:
     void on_radioButton_read_clicked();
-
     void on_radioButton_write_clicked();
-
     void on_pushButton_clicked();
 
 private:
@@ -31,4 +29,4 @@ private:
     std::string m_filePath;
 };
 
-#endif // READANDWRITEDIALOG_H
+#endif // TOYFS_GUI_READANDWRITEDIALOG_H_

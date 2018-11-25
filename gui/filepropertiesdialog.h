@@ -1,5 +1,5 @@
-#ifndef FILEPROPERTIESDIALOG_H
-#define FILEPROPERTIESDIALOG_H
+#ifndef TOYFS_GUI_FILEPROPERTIESDIALOG_H_
+#define TOYFS_GUI_FILEPROPERTIESDIALOG_H_
 
 #include "filesystem.h"
 
@@ -19,7 +19,6 @@ public:
 
 private slots:
     void on_pushButton_ok_clicked();
-
     void on_pushButton_cancel_clicked();
 
 private:
@@ -30,4 +29,4 @@ private:
     FileSystem::Attributes m_oldAttrs;
 };
 
-#endif // FILEPROPERTIESDIALOG_H
+#endif // TOYFS_GUI_FILEPROPERTIESDIALOG_H_

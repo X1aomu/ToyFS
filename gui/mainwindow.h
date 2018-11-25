@@ -1,12 +1,11 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
-#include <QMainWindow>
+#ifndef TOYFS_GUI_MAINWINDOW_H_
+#define TOYFS_GUI_MAINWINDOW_H_
 
 #include "disk.h"
 #include "filesystem.h"
-
 #include "gui/dirview.h"
+
+#include <QMainWindow>
 
 namespace Ui {
 class MainWindow;
@@ -53,4 +52,4 @@ private:
 
 };
 
-#endif // MAINWINDOW_H
+#endif // TOYFS_GUI_MAINWINDOW_H_

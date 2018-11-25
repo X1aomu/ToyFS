@@ -26,9 +26,6 @@ DirView::DirView(QWidget *parent) :
 
     initActionsAndContextMenu();
     reset();
-//    QTimer *updateOpenedFileListTimer = new QTimer(this);
-//    connect(updateOpenedFileListTimer, &QTimer::timeout, this, &DirView::updateOpenedFileList);
-//    updateOpenedFileListTimer->start(500);
 }
 
 DirView::~DirView()

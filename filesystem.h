@@ -77,8 +77,6 @@ public:
     bool deleteEntry(const std::string& fullPath);
     bool deleteEntry(std::shared_ptr<Entry> entry);
 
-    //std::shared_ptr<Entry> listEntries(const std::string& fullpath);
-
     bool sync();
 
 private:

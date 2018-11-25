@@ -1,10 +1,9 @@
-#ifndef DIRVIEW_H
-#define DIRVIEW_H
-
-#include <QWidget>
+#ifndef TOYFS_GUI_DIRVIEW_H_
+#define TOYFS_GUI_DIRVIEW_H_
 
 #include "filesystem.h"
 
+#include <QWidget>
 #include <QStringListModel>
 #include <QStandardItemModel>
 #include <QMenu>
@@ -35,15 +34,10 @@ private:
     void initActionsAndContextMenu();
 
 private slots:
-//    void treeViewContextMenuHandler(const QPoint& pos);
-//    void listViewContextMenuHandler(const QPoint& pos);
-
     void on_listViewOpenedFiles_doubleClicked(const QModelIndex &index);
     void on_treeViewBrowsingFiles_doubleClicked(const QModelIndex &index);
     void on_toolButton_up_clicked();
-
     void on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint &pos);
-
     void on_listViewOpenedFiles_customContextMenuRequested(const QPoint &pos);
 
 private:
@@ -68,4 +62,4 @@ private:
     QAction* actionClose = new QAction("Close", this);
 };
 
-#endif // DIRVIEW_H
+#endif // TOYFS_GUI_DIRVIEW_H_
