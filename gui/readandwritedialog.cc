@@ -1,6 +1,8 @@
 #include "readandwritedialog.h"
 #include "ui_readandwritedialog.h"
 
+#include <QtDebug>
+
 ReadAndWriteDialog::ReadAndWriteDialog(FileSystem *fs, const std::string &filePath, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::ReadAndWriteDialog),
@@ -49,6 +51,7 @@ void ReadAndWriteDialog::on_pushButton_clicked()
     else
     {
         int numOfBytesToWrite = ui->textEdit->toPlainText().length();
+        qDebug()
         const char* output = ui->textEdit->toPlainText().toStdString().c_str();
         bool success = m_fs->writeFile(m_filePath, output, numOfBytesToWrite);
         int bytesWritten = success ? numOfBytesToWrite : 0;

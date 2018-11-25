@@ -25,6 +25,7 @@ DirView::DirView(QWidget *parent) :
     ui->treeViewBrowsingFiles->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     initActionsAndContextMenu();
+    reset();
 //    QTimer *updateOpenedFileListTimer = new QTimer(this);
 //    connect(updateOpenedFileListTimer, &QTimer::timeout, this, &DirView::updateOpenedFileList);
 //    updateOpenedFileListTimer->start(500);
@@ -125,6 +126,7 @@ void DirView::initActionsAndContextMenu()
     m_openedFileMenu->addAction(actionClose);
 
     connect(actionOpenFile, &QAction::triggered, this, [&](){
+        if (m_fs == nullptr) return;
         QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
         // 保证永远获取的是最左边的文件名
         QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
@@ -151,6 +153,7 @@ void DirView::initActionsAndContextMenu()
     });
 
     connect(actionFileProperties, &QAction::triggered, this, [&](){
+        if (m_fs == nullptr) return;
         QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
         // 保证永远获取的是最左边的文件名
         QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
@@ -162,6 +165,7 @@ void DirView::initActionsAndContextMenu()
     });
 
     connect(actionDeleteEntry, &QAction::triggered, this, [&](){
+        if (m_fs == nullptr) return;
         QModelIndex index = ui->treeViewBrowsingFiles->currentIndex();
         // 保证永远获取的是最左边的文件名
         QModelIndex mostLeftIndex = m_directoryModel->index(index.row(), 0);
@@ -180,11 +184,13 @@ void DirView::initActionsAndContextMenu()
     });
 
     connect(actionAddNewFile, &QAction::triggered, this, [&](){
+        if (m_fs == nullptr) return;
         QString fileName = QInputDialog::getText(this, "Input File Name", "File Name:");
         if (m_fs->createFile(m_fs->getEntry(m_pwd), fileName.toStdString(), FileSystem::File))
         {
             emit message("Created file " + fileName.toStdString());
             updateDirectoryView(); // 更新界面
+            updateOpenedFileList();
         }
         else
         {
@@ -193,6 +199,7 @@ void DirView::initActionsAndContextMenu()
     });
 
     connect(actionAddNewDir, &QAction::triggered, this, [&](){
+        if (m_fs == nullptr) return;
         QString dirName = QInputDialog::getText(this, "Input Directory Name", "Directory Name:");
         if (m_fs->createDir(m_fs->getEntry(m_pwd), dirName.toStdString()))
         {
@@ -206,6 +213,7 @@ void DirView::initActionsAndContextMenu()
     });
 
     connect(actionReadOrWrite, &QAction::triggered, this, [&](){
+        if (m_fs == nullptr) return;
         std::string filePath = ui->listViewOpenedFiles->currentIndex().data().toString().toStdString();
         ReadAndWriteDialog* dialog = new ReadAndWriteDialog(m_fs, filePath);
         dialog->show();
@@ -213,6 +221,7 @@ void DirView::initActionsAndContextMenu()
     });
 
     connect(actionClose, &QAction::triggered, this, [&](){
+        if (m_fs == nullptr) return;
         std::string filePath = ui->listViewOpenedFiles->currentIndex().data().toString().toStdString();
         m_fs->closeFile(filePath);
         updateOpenedFileList();
@@ -241,6 +250,7 @@ void DirView::on_toolButton_up_clicked()
 
 void DirView::on_treeViewBrowsingFiles_customContextMenuRequested(const QPoint &pos)
 {
+    if (m_fs == nullptr) return;
     QModelIndex index = ui->treeViewBrowsingFiles->indexAt(pos);
     if (!index.isValid()) // 没有选中文件或目录
     {

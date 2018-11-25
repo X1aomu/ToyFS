@@ -46,12 +46,6 @@ FileSystem::FileSystem(Disk &disk)
 
 FileSystem::~FileSystem()
 {
-    // 关闭所有文件
-    for (auto const& e : m_openedFiles)
-    {
-        closeFile(e.first);
-    }
-    sync();
     delete[] m_fat;
     delete[] m_buffer;
 }
