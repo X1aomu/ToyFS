@@ -70,7 +70,7 @@ int main()
 
     // open and close
     // five files was opened before
-    list<string> openedFileList = fs.getOpenedFileList();
+    vector<string> openedFileList = fs.getOpenedFiles();
     assert(std::find(openedFileList.begin(), openedFileList.end(), f1) != openedFileList.end());
     assert(std::find(openedFileList.begin(), openedFileList.end(), f2) != openedFileList.end());
     assert(std::find(openedFileList.begin(), openedFileList.end(), f3) != openedFileList.end());
