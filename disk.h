@@ -59,8 +59,7 @@ public:
 private:
     std::fstream m_ioFile;
 
-    std::mutex m_mutex1Read;
-    std::mutex m_mutex2Write;
+    std::mutex m_mutex;
 };
 
 #endif // TOYFS_FAKEDISK_H_

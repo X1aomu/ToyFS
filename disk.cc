@@ -28,7 +28,7 @@ Disk::~Disk()
 
 bool Disk::isValid()
 {
-    std::lock_guard<std::mutex> lock(m_mutex1Read);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     if (m_ioFile.good())
     {
@@ -51,7 +51,7 @@ bool Disk::isValid()
 
 bool Disk::read(char* buf, int sector)
 {
-    std::lock_guard<std::mutex> lock(m_mutex1Read);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     m_ioFile.seekg(kSectorSize * sector, std::ios::beg);
     m_ioFile.read(buf, kSectorSize);
@@ -61,7 +61,7 @@ bool Disk::read(char* buf, int sector)
 
 bool Disk::write(char* buf, int sector)
 {
-    std::lock_guard<std::mutex> lock(m_mutex2Write);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     m_ioFile.seekp(kSectorSize * sector, std::ios::beg);
     auto posBefore = m_ioFile.tellp();
