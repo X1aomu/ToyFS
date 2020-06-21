@@ -5,7 +5,7 @@
 #include <limits>
 #include <mutex>
 
-bool Disk::CreateDisk(const std::__cxx11::string& filePath)
+bool Disk::CreateDisk(const std::string& filePath)
 {
     std::ofstream newFile(filePath);
     for (int i = 0; i != kNumOfSector * kSectorSize; ++i)
